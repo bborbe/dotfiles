@@ -12,10 +12,10 @@ fi
 INSTALLDIR=$HOME
 [ -n "$1" ] && INSTALLDIR="$1"
 
-for i in .vimrc .gitignore_global
+for i in .vimrc .vim .gitignore_global
 do
 	echo "install ${i}"
-	if [ -f $INSTALLDIR/$i ]; then
+	if [ -e $INSTALLDIR/$i ]; then
 		if [ -L $INSTALLDIR/$i ]; then
 			unlink $INSTALLDIR/$i 
 		else
