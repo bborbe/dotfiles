@@ -12,9 +12,17 @@ fi
 INSTALLDIR=$HOME
 [ -n "$1" ] && INSTALLDIR="$1"
 
-for i in .vimrc
+for i in .vimrc .gitignore_global
 do
-	mv $INSTALLDIR/$i $INSTALLDIR/$i.old 2> /dev/null
+	echo "install ${i}"
+	if [ -f $INSTALLDIR/$i ]; then
+		if [ -L $INSTALLDIR/$i ]; then
+			unlink $INSTALLDIR/$i 
+		else
+			mv -n $INSTALLDIR/$i $INSTALLDIR/$i.old 
+		fi
+	fi
 	ln -s $PWD/$i $INSTALLDIR/$i;
+	echo "install ${i} completed"
 done;
 
