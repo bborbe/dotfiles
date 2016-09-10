@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+INSTALLDIR=${1:-$HOME}
+
+
+if [ "$1" == "-h" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ]; then
+    echo "$0 <dotfiles install dir>"
+    echo "Existing dotfiles will be moved to <filename>.old"
+    exit
+fi
+
+for i in .vimrc
+do
+	mv $INSTALLDIR/$i $INSTALLDIR/$i.old 2> /dev/null
+	ln -s $PWD/$i $INSTALLDIR/$i;
+done;
+
