@@ -12,7 +12,7 @@ fi
 INSTALLDIR=$HOME
 [ -n "$1" ] && INSTALLDIR="$1"
 
-for i in .vimrc .vim .gitignore_global
+for i in .vimrc .vim .gitignore_global .emacs
 do
 	echo "install ${i}"
 	if [ -e $INSTALLDIR/$i ]; then
