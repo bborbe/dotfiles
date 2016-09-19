@@ -10,6 +10,17 @@
 (package-initialize)
 ;(package-refresh-contents)
 
+; line numbers
+(global-linum-mode t)
+
+;; Please set your themes directory to 'custom-theme-load-path
+(add-to-list 'custom-theme-load-path
+             (file-name-as-directory "~/.emacs.d/replace-colorthemes"))
+
+;; load your favorite theme
+(load-theme 'desert t t)
+(enable-theme 'desert)
+
 ; flycheck mode
 (package-install 'flycheck)
 (global-flycheck-mode)
