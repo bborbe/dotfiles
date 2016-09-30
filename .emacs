@@ -64,6 +64,9 @@
 (require 'go-flymake)
 (require 'go-flycheck)
 
+; markdown
+(package-install 'markdown-preview-mode)
+
 ; starts the emacs server
 (server-start)
 
