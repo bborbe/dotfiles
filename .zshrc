@@ -48,11 +48,21 @@ source ~/.zsh-work.zsh
 
 PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
 
-export EDITOR=vi
 export PAGER=more
 export BLOCKSIZE=K
 export HISTSIZE=500
 export PATH=/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+
+# Emacs
+alias emacs='open -a /Applications/Emacs.app $1'
+alias ec='/Applications/Emacs.app/Contents/MacOS/bin/emacsclient'
+export ALTERNATE_EDITOR=""
+export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
+export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
+
+# Vim
+#alias vim='/Applications/MacPorts/MacVim.app/Contents/MacOS/Vim -g'
+alias vim='open -a /Applications/MacPorts/MacVim.app $1'
 
 # Perl
 export PERL_LWP_SSL_VERIFY_HOSTNAME=0
@@ -81,14 +91,6 @@ alias get="wget --no-check-certificate"
 export COREOS_ENDPOINT=172.16.30.10
 export FLEETCTL_ENDPOINT=http://$COREOS_ENDPOINT:4001
 export ETCDCTL_ENDPOINT=http://$COREOS_ENDPOINT:2379
-
-# Vim
-#alias vim='/Applications/MacPorts/MacVim.app/Contents/MacOS/Vim -g'
-alias vim='open -a /Applications/MacPorts/MacVim.app $1'
-
-# Emacs
-alias emacs='open -a /Applications/Emacs.app $1'
-alias ec='/Applications/Emacs.app/Contents/MacOS/bin/emacsclient'
 
 # Docker
 export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH
