@@ -59,6 +59,7 @@ alias ec='/Applications/Emacs.app/Contents/MacOS/bin/emacsclient'
 export ALTERNATE_EDITOR=""
 export EDITOR="emacsclient -c -a emacs"         # $EDITOR should open in terminal
 export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
+export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
 
 # Vim
 #alias vim='/Applications/MacPorts/MacVim.app/Contents/MacOS/Vim -g'
