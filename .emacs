@@ -14,9 +14,8 @@
 (global-linum-mode t)
 
 ;; Please set your themes directory to 'custom-theme-load-path
-(add-to-list 'custom-theme-load-path
-             (file-name-as-directory "~/.emacs.d/replace-colorthemes"))
-
+; git clone https://github.com/emacs-jp/replace-colorthemes.git ~/.emacs.d/replace-colorthemes
+(add-to-list 'custom-theme-load-path (file-name-as-directory "~/.emacs.d/replace-colorthemes"))
 ;; load your favorite theme
 (load-theme 'desert t t)
 (enable-theme 'desert)
@@ -36,7 +35,9 @@
 (evil-mode 1)
 
 ; powerline
-(package-install 'powerline)
+; git clone https://github.com/Dewdrops/powerline.git ~/.emacs.d/powerline
+; (package-install 'powerline)
+(add-to-list 'load-path "~/.emacs.d/powerline")
 (require 'powerline)
 (powerline-center-evil-theme)
 
@@ -46,8 +47,7 @@
 (require 'go-mode-autoloads)
 (add-to-list 'exec-path "/opt/go/bin")
 (add-hook 'before-save-hook 'gofmt-before-save)
-(add-hook 'go-mode-hook (lambda ()
-			  (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)))
+(add-hook 'go-mode-hook (lambda () (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)))
 
 ; gocode
 (add-to-list 'load-path "~/.emacs.d/gocode/emacs")
@@ -61,7 +61,7 @@
 (require 'go-flymake)
 (require 'go-flycheck)
 
-;starts the emacs server
+; starts the emacs server
 (server-start)
 
 ;;; .emacs ends here
