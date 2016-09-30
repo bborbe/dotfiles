@@ -27,20 +27,22 @@
 
 ; flycheck mode
 (package-install 'flycheck)
+(require 'flycheck)
 (global-flycheck-mode)
 
 ; evil mode
-(add-to-list 'load-path "~/.emacs.d/evil")
+(package-install 'evil)
 (require 'evil)
 (evil-mode 1)
 
 ; powerline
-(add-to-list 'load-path "~/.emacs.d/powerline")
+(package-install 'powerline)
 (require 'powerline)
 (powerline-center-evil-theme)
 
 ; go mode
-(add-to-list 'load-path "~/.emacs.d/go-mode.el")
+(package-install 'go)
+(package-install 'go-autocomplete)
 (require 'go-mode-autoloads)
 (add-to-list 'exec-path "/opt/go/bin")
 (add-hook 'before-save-hook 'gofmt-before-save)
@@ -70,7 +72,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
+    (evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
