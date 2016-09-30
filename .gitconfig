@@ -1,0 +1,18 @@
+[color]
+	ui = off
+[user]
+	name = Benjamin Borbe
+	email = bborbe@rocketnews.de
+[core]
+	excludesfile = /Users/bborbe/.gitignore_global
+	autocrlf = input
+[push]
+	default = simple
+[diff]
+	tool = vimdiff
+[credential]
+	helper = cache
+[commit]
+	template = /Users/bborbe/.stCommitMsg
+[difftool]
+	prompt = false
