@@ -57,7 +57,7 @@ export PATH=/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin
 alias emacs='open -a /Applications/Emacs.app $1'
 alias ec='/Applications/Emacs.app/Contents/MacOS/bin/emacsclient'
 export ALTERNATE_EDITOR=""
-export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
+export EDITOR="emacsclient -c -a emacs"         # $EDITOR should open in terminal
 export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
 
 # Vim
