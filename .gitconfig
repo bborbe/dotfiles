@@ -6,7 +6,7 @@
 [core]
 	excludesfile = /Users/bborbe/.gitignore_global
 	autocrlf = input
-	editor = ~/bin/emacs
+	editor = ~/bin/ec
 [push]
 	default = simple
 [diff]
