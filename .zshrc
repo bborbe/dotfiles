@@ -116,6 +116,6 @@ export PATH=/opt/local/lib/mysql55/bin:$PATH
 export PATH=/Applications/Vagrant/bin:$PATH
 
 # User Bins
-export PATH=$HOME/bin:$PATH
+export PATH=$HOME/Documents/workspaces/scripts:$PATH
 
 #export http_proxy="http://127.0.0.1:8118"
