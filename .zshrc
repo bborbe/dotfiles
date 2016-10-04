@@ -54,11 +54,11 @@ export HISTSIZE=500
 export PATH=/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
 # Emacs
-# alias emacs='open -a /Applications/Emacs.app $1'
-# alias ec='/Applications/Emacs.app/Contents/MacOS/bin/emacsclient'
 export ALTERNATE_EDITOR=""
-export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
-export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
+#export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
+#export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
+export EDITOR="ec"         # $EDITOR should open in terminal
+export VISUAL="ec"         # $VISUAL opens in GUI with non-daemon as alternate
 
 export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
 
