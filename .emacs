@@ -45,11 +45,15 @@
 (require 'powerline)
 (powerline-center-evil-theme)
 
+; projectile
+(package-install 'projectile)
+
 ; go mode
 (package-install 'go)
 (package-install 'go-autocomplete)
 (require 'go-mode-autoloads)
 (add-to-list 'exec-path "/opt/go/bin")
+(add-to-list 'exec-path "/Users/bborbe/Documents/workspaces/go/bin")
 (add-hook 'before-save-hook 'gofmt-before-save)
 (add-hook 'go-mode-hook (lambda () (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)))
 
