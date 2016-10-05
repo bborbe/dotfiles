@@ -36,6 +36,7 @@
 (package-install 'evil)
 (require 'evil)
 (evil-mode 1)
+(evil-ex-define-cmd "wq" 'evil-save-and-quit)
 
 ; powerline
 ; git clone https://github.com/Dewdrops/powerline.git ~/.emacs.d/powerline
