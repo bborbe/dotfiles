@@ -16,6 +16,9 @@
 ; line numbers
 (global-linum-mode t)
 
+; prevent close
+(setq confirm-kill-emacs 'y-or-n-p)
+
 ;; Please set your themes directory to 'custom-theme-load-path
 ; git clone https://github.com/emacs-jp/replace-colorthemes.git ~/.emacs.d/replace-colorthemes
 (add-to-list 'custom-theme-load-path (file-name-as-directory "~/.emacs.d/replace-colorthemes"))
