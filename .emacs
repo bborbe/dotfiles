@@ -49,7 +49,28 @@
 (powerline-center-evil-theme)
 
 ; projectile
+; sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist
 (package-install 'projectile)
+(require 'projectile)
+(package-install 'helm-projectile)
+(require 'helm-projectile)
+(package-install 'helm)
+(require 'helm)
+
+(projectile-global-mode)
+(setq projectile-indexing-method 'native) ; use system command like find, git...
+(setq projectile-enable-caching nil)
+(setq projectile-require-project-root t)
+
+;;;; Integrated find-file
+;; If current working directory is project, use help-projectile
+;; Else, use find-file
+(defun sr-open-file ()
+  "Open file using projectile+Helm or ido"
+  (interactive)
+  (if (projectile-project-p)
+      (helm-projectile)
+    (helm-for-files)))
 
 ; go mode
 (package-install 'go)
