@@ -71,6 +71,8 @@
 (require 'helm-projectile)
 (package-install 'helm)
 (require 'helm)
+(package-install 'helm-swoop)
+(require 'helm-swoop)
 
 (projectile-global-mode)
 (setq projectile-indexing-method 'native) ; use system command like find, git...
@@ -121,7 +123,7 @@
  '(markdown-command "/opt/local/bin/pandoc")
  '(package-selected-packages
    (quote
-    (let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
+    (evil-visual-mark-mode helm-swoop go-autocomplete go helm helm-projectile projectile let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
 
 ; set backup directory
 (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
