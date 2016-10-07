@@ -16,6 +16,21 @@
 ; line numbers
 (global-linum-mode t)
 
+; shortcuts
+(global-set-key (kbd "M-o") 'sr-open-file)
+
+(global-set-key (kbd "M-i") 'helm-swoop)
+(global-set-key (kbd "M-I") 'helm-swoop-back-to-last-point)
+(define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
+
+(global-set-key (kbd "C-x b") 'ido-switch-buffer)
+(global-set-key [(ctrl tab)] 'ido-switch-buffer)
+(global-set-key [(ctrl shift tab)] 'ido-switch-buffer)
+(add-hook 'ido-setup-hook
+          (lambda ()
+            (define-key ido-buffer-completion-map [(ctrl tab)] 'ido-next-match)
+            (define-key ido-buffer-completion-map [(ctrl shift tab)] 'ido-prev-match)))
+
 ; prevent close
 (setq confirm-kill-emacs 'y-or-n-p)
 
