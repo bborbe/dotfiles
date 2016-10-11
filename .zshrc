@@ -52,6 +52,7 @@ export PAGER=more
 export BLOCKSIZE=K
 export HISTSIZE=500
 export PATH=/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+export LC_ALL=en_US.UTF-8
 
 # Emacs
 export ALTERNATE_EDITOR=""
