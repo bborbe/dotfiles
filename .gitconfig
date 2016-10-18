@@ -6,7 +6,8 @@
 [core]
 	excludesfile = /Users/bborbe/.gitignore_global
 	autocrlf = input
-	editor = emacsclient -c -a emacs
+#	editor = emacsclient -c -a emacs
+	editor = emacsclient -c
 [push]
 	default = simple
 [diff]
