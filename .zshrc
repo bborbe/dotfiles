@@ -67,6 +67,9 @@ export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
 #alias vim='/Applications/MacPorts/MacVim.app/Contents/MacOS/Vim -g'
 alias vim='open -a /Applications/MacPorts/MacVim.app $1'
 
+# VS Code
+alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
+
 # Perl
 export PERL_LWP_SSL_VERIFY_HOSTNAME=0
 export PERL_UNICODE=SDL
