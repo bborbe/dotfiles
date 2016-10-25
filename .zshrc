@@ -50,7 +50,7 @@ PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[bl
 
 export PAGER=more
 export BLOCKSIZE=K
-export HISTSIZE=500
+export HISTSIZE=50000
 export PATH=/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 export LC_ALL=en_US.UTF-8
 
