@@ -64,6 +64,10 @@
 (require 'powerline)
 (powerline-center-evil-theme)
 
+; yaml-mode
+(package-install 'yaml-mode)
+(require 'yaml-mode)
+
 ; projectile
 ; sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist
 (package-install 'projectile)
@@ -124,7 +128,7 @@
  '(markdown-command "/opt/local/bin/pandoc")
  '(package-selected-packages
    (quote
-    (evil-visual-mark-mode helm-swoop go-autocomplete go helm helm-projectile projectile let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
+    (yaml-mode evil-visual-mark-mode helm-swoop go-autocomplete go helm helm-projectile projectile let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
 
 ; set backup directory
 (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
