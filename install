@@ -1,18 +1,34 @@
 #!/usr/bin/env bash
 
+files=(
+	.vimrc
+	.vim
+	.gitignore_global
+	.gitconfig
+	.emacs
+	.hgrc
+	.hgignore_global
+	.zshrc
+	.zsh
+	.stCommitMsg
+	.fonts.conf
+)
+
+################################################################################
+
 set -o errexit
 set -o pipefail
 
 if [ "$1" == "-h" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ]; then
-    echo "$0 <dotfiles install dir>"
-    echo "Existing dotfiles will be moved to <filename>.old"
-    exit
+	echo "$0 <dotfiles install dir>"
+	echo "Existing dotfiles will be moved to <filename>.old"
+	exit
 fi
 
 INSTALLDIR=$HOME
 [ -n "$1" ] && INSTALLDIR="$1"
 
-for i in .vimrc .vim .gitignore_global .gitconfig .emacs .hgrc .hgignore_global .zshrc .zsh .stCommitMsg
+for i in ${files[@]}
 do
 	echo "install ${i}"
 	if [ -e $INSTALLDIR/$i ]; then
