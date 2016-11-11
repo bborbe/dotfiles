@@ -1,5 +1,8 @@
 [color]
-	ui = off
+	ui = auto
+	diff = auto
+	status = auto
+	branch = auto
 [user]
 	name = Benjamin Borbe
 	email = bborbe@rocketnews.de
@@ -8,6 +11,7 @@
 	autocrlf = input
 #	editor = emacsclient -c -a emacs
 	editor = emacsclient -c
+	pager = less -R
 [push]
 	default = simple
 [diff]
