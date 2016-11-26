@@ -75,7 +75,9 @@ export PERL_LWP_SSL_VERIFY_HOSTNAME=0
 export PERL_UNICODE=SDL
 
 # Java
-export JAVA_HOME=`/usr/libexec/java_home`
+if type "/usr/libexec/java_home" > /dev/null; then
+    export JAVA_HOME=`/usr/libexec/java_home`
+fi
 export M2_REPO=~/.m2/repository
 export M2_HOME=/opt/apache-maven-3.2.5
 export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
@@ -86,8 +88,10 @@ export PATH=$M2_HOME/bin:$PATH
 export GOPATH="$HOME/Documents/workspaces/go"
 export GO=$GOPATH
 export GOROOT=/opt/go
-launchctl setenv GOROOT /opt/go
-launchctl setenv GOPATH /Users/bborbe/Documents/workspaces/go
+if type "launchctl" > /dev/null; then
+    launchctl setenv GOROOT /opt/go
+    launchctl setenv GOPATH /Users/bborbe/Documents/workspaces/go
+fi
 export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 # Wget
@@ -163,8 +167,10 @@ bindkey "^[[B" down-line-or-beginning-search # Down
 
 # pyenv
 export PATH="/Users/bborbe/.pyenv/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
+if type "pyenv" > /dev/null; then
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+fi
 
 # git alias
 gp='git pull && git submodule update'
