@@ -51,8 +51,6 @@ source $ZSH/oh-my-zsh.sh
 source ~/.zsh/colors.zsh
 source ~/.zsh/work.zsh
 
-PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
-
 export PAGER=more
 export BLOCKSIZE=K
 export HISTSIZE=50000
@@ -150,6 +148,10 @@ bindkey '^w' backward-kill-word
 
 # ctrl-r starts searching history backward
 bindkey '^r' history-incremental-search-backward
+
+# prompt
+#PROMPT='%n@%m %{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
 
 function zle-line-init zle-keymap-select {
     VIM_PROMPT="%{$fg_bold[red]%} <N> %{$reset_color%}"
