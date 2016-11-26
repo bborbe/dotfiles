@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 files=(
+	.profile
 	.vimrc
 	.vim
 	.gitignore_global
