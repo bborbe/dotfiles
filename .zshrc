@@ -165,3 +165,10 @@ bindkey "^[[B" down-line-or-beginning-search # Down
 export PATH="/Users/bborbe/.pyenv/bin:$PATH"
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
+
+# git alias
+gp='git pull && git submodule update'
+
+if [ ! -d $HOME/.oh-my-zsh ]; then
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+fi
