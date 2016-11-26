@@ -1,3 +1,8 @@
+# install oh-my-zsh if not exists
+if [ ! -d $HOME/.oh-my-zsh ]; then
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+fi
+
 # Path to your oh-my-zsh configuration.
 ZSH=$HOME/.oh-my-zsh
 
@@ -175,6 +180,3 @@ fi
 # git alias
 gp='git pull && git submodule update'
 
-if [ ! -d $HOME/.oh-my-zsh ]; then
-	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-fi
