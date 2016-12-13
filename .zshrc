@@ -183,5 +183,5 @@ if type "pyenv" > /dev/null; then
 fi
 
 # git alias
-gp='git pull && git submodule update'
+alias gps='git pull && git submodule update'
 
