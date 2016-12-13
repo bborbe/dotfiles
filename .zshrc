@@ -49,7 +49,6 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 source ~/.zsh/colors.zsh
-source ~/.zsh/work.zsh
 
 export PAGER=more
 export BLOCKSIZE=K
