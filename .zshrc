@@ -129,6 +129,9 @@ export PATH=/Applications/Vagrant/bin:$PATH
 # User Bins
 export PATH=$HOME/Documents/workspaces/scripts:$PATH
 
+# Postgresql
+export PATH=/opt/local/lib/postgresql96/bin:$PATH
+
 #export http_proxy="http://127.0.0.1:8118"
 
 # vim mode
