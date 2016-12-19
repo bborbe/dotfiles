@@ -49,8 +49,6 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 source ~/.zsh/colors.zsh
-source ~/.zsh/dotfiles.zsh
-${DOTFILES}/update
 
 export PAGER=more
 export BLOCKSIZE=K
@@ -185,4 +183,8 @@ fi
 
 # git alias
 alias gps='git pull && git submodule update'
+
+# update dotfiles
+source ~/.zsh/dotfiles.zsh
+${DOTFILES}/update
 
