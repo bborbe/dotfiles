@@ -49,6 +49,8 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 source ~/.zsh/colors.zsh
+source ~/.zsh/dotfiles.zsh
+${DOTFILES}/update
 
 export PAGER=more
 export BLOCKSIZE=K

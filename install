@@ -29,6 +29,8 @@ fi
 INSTALLDIR=$HOME
 [ -n "$1" ] && INSTALLDIR="$1"
 
+dotfiles=$(dirname $(readlink -f "$0"))
+
 for i in ${files[@]}
 do
 	echo "install ${i}"
@@ -39,7 +41,9 @@ do
 			mv -n $INSTALLDIR/$i $INSTALLDIR/$i.old 
 		fi
 	fi
-	ln -s $PWD/$i $INSTALLDIR/$i;
+	ln -s $dotfiles/$i $INSTALLDIR/$i;
 	echo "install ${i} completed"
 done;
 
+echo "export DOTFILES=${dotfiles}" > ~/.zsh/dotfiles.zsh
+chmod a+x ~/.zsh/dotfiles.zsh
