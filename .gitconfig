@@ -7,11 +7,10 @@
 	name = Benjamin Borbe
 	email = bborbe@rocketnews.de
 [core]
-	excludesfile = /Users/bborbe/.gitignore_global
+	excludesfile = ~/.gitignore_global
 	autocrlf = input
-#	editor = emacsclient -c -a emacs
-	editor = emacsclient -c
-	pager = more -R
+	editor = vi
+	pager = more
 [push]
 	default = simple
 [diff]
