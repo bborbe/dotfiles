@@ -56,7 +56,6 @@ export HISTSIZE=50000
 export PATH=/opt/local/libexec/gnubin:/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 export LC_ALL=en_US.UTF-8
 
-# Emacs
 export ALTERNATE_EDITOR=""
 #export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
 #export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
@@ -65,6 +64,8 @@ export ALTERNATE_EDITOR=""
 export EDITOR="vi"         # $EDITOR should open in terminal
 export VISUAL="vi"         # $VISUAL opens in GUI with non-daemon as alternate
 
+# Emacs
+source ~/.zsh/emacs.zsh
 export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
 
 # Vim
