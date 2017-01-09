@@ -18,7 +18,7 @@
 [credential]
 	helper = cache
 [commit]
-	template = /Users/bborbe/.stCommitMsg
+	template = ~/.stCommitMsg
 [difftool]
 	prompt = false
 [difftool "sourcetree"]
