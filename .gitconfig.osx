@@ -10,7 +10,7 @@
 	excludesfile = ~/.gitignore_global
 	autocrlf = input
 	editor = vi
-	pager = more
+	pager = more -R
 [push]
 	default = simple
 [diff]

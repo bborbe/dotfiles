@@ -41,7 +41,13 @@ do
 			mv -n $INSTALLDIR/$i $INSTALLDIR/$i.old 
 		fi
 	fi
-	ln -s $dotfiles/$i $INSTALLDIR/$i;
+	if [ -e "${dotfiles}/${i}.osx" && "$OSTYPE" == "darwin"* ]; then
+		ln -s "${dotfiles}/${i}.osx" $INSTALLDIR/$i;
+	elif [ -e "${dotfiles}/${i}.linux" && "$OSTYPE" == "linux-gnu" ]; then
+		ln -s "${dotfiles}/${i}.linux" $INSTALLDIR/$i;
+	else
+		ln -s ${dotfiles}/${i} $INSTALLDIR/$i;
+	fi
 	echo "install ${i} completed"
 done;
 
