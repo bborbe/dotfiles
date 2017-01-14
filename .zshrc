@@ -178,7 +178,7 @@ bindkey "^[[A" up-line-or-beginning-search # Up
 bindkey "^[[B" down-line-or-beginning-search # Down
 
 # pyenv
-export PATH="/Users/bborbe/.pyenv/bin:$PATH"
+export PATH="$HOME/.pyenv/bin:$PATH"
 if type "pyenv" > /dev/null; then
     eval "$(pyenv init -)"
     eval "$(pyenv virtualenv-init -)"
@@ -191,3 +191,8 @@ alias gps='git pull && git submodule update'
 source ~/.zsh/dotfiles.zsh
 ${DOTFILES}/update
 
+# mac os settings
+source ~/.zsh/mac.zsh
+
+# linux os settings
+source ~/.zsh/linux.zsh
