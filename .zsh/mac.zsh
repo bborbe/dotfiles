@@ -38,5 +38,4 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     # Emacs
     export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
-
 fi
