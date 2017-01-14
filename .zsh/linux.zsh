@@ -1,3 +1,3 @@
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	echo "linux"
+	#echo "linux"
 fi
