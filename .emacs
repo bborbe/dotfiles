@@ -99,7 +99,7 @@
 (package-install 'go-autocomplete)
 (require 'go-mode-autoloads)
 (add-to-list 'exec-path "/opt/go/bin")
-(add-to-list 'exec-path "/Users/bborbe/Documents/workspaces/go/bin")
+(add-to-list 'exec-path "~/Documents/workspaces/go/bin")
 (add-hook 'before-save-hook 'gofmt-before-save)
 (add-hook 'go-mode-hook (lambda () (local-set-key (kbd "C-c C-r") 'go-remove-unused-imports)))
 
@@ -111,7 +111,7 @@
 
 ; goflymake
 (add-to-list 'load-path "~/Documents/workspaces/go/src/github.com/dougm/goflymake")
-(add-to-list 'exec-path "/Documents/workspaces/go/bin")
+(add-to-list 'exec-path "~/Documents/workspaces/go/bin")
 (require 'go-flymake)
 (require 'go-flycheck)
 

@@ -47,9 +47,6 @@ ZSH_THEME="robbyrussell"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(git)
 
-source $ZSH/oh-my-zsh.sh
-source ~/.zsh/colors.zsh
-
 export PAGER=more
 export BLOCKSIZE=K
 export HISTSIZE=50000
@@ -64,30 +61,37 @@ export ALTERNATE_EDITOR=""
 export EDITOR="vi"         # $EDITOR should open in terminal
 export VISUAL="vi"         # $VISUAL opens in GUI with non-daemon as alternate
 
+# update dotfiles
+source ~/.zsh/dotfiles.zsh
+${DOTFILES}/update
+
+# Oh-My-Zsh
+source $ZSH/oh-my-zsh.sh
+
+# Colors
+source ~/.zsh/colors.zsh
+
 # Emacs
 source ~/.zsh/emacs.zsh
-export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
 
-# Vim
-#alias vim='/Applications/MacPorts/MacVim.app/Contents/MacOS/Vim -g'
-alias vim='open -a /Applications/MacPorts/MacVim.app $1'
+# mac os settings
+source ~/.zsh/mac.zsh
 
-# VS Code
-alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
+# linux os settings
+source ~/.zsh/linux.zsh
 
 # Perl
 export PERL_LWP_SSL_VERIFY_HOSTNAME=0
 export PERL_UNICODE=SDL
 
-# Java
-if type "/usr/libexec/java_home" > /dev/null; then
-    export JAVA_HOME=`/usr/libexec/java_home`
-fi
+# Mavaen
 export M2_REPO=~/.m2/repository
 export M2_HOME=/opt/apache-maven-3.2.5
 export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
-export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
 export PATH=$M2_HOME/bin:$PATH
+
+# Java
+export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
 
 # Golang
 export GOPATH="$HOME/Documents/workspaces/go"
@@ -95,7 +99,7 @@ export GO=$GOPATH
 export GOROOT=/opt/go
 if type "launchctl" > /dev/null; then
     launchctl setenv GOROOT /opt/go
-    launchctl setenv GOPATH /Users/bborbe/Documents/workspaces/go
+    launchctl setenv GOPATH ~/Documents/workspaces/go
 fi
 export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
@@ -107,33 +111,10 @@ export COREOS_ENDPOINT=172.16.30.10
 export FLEETCTL_ENDPOINT=http://$COREOS_ENDPOINT:4001
 export ETCDCTL_ENDPOINT=http://$COREOS_ENDPOINT:2379
 
-# Docker
-export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH
-
-# Phantomjs
-export PATH=/opt/phantomjs/bin:$PATH
-
-# Chromedriver
-export PATH=/opt/chromedriver/bin:$PATH
-
-# Nsq
-export PATH=/opt/nsq/bin:$PATH
-
-# Postgresql
-export PATH=/opt/local/lib/postgresql93/bin:$PATH
-
-# Mysql
-export PATH=/opt/local/lib/mysql55/bin:$PATH
-
-# Vagrant
-export PATH=/Applications/Vagrant/bin:$PATH
-
 # User Bins
 export PATH=$HOME/Documents/workspaces/scripts:$PATH
 
-# Postgresql
-export PATH=/opt/local/lib/postgresql96/bin:$PATH
-
+# Http-Proxy
 #export http_proxy="http://127.0.0.1:8118"
 
 # vim mode
@@ -186,13 +167,3 @@ fi
 
 # git alias
 alias gps='git pull && git submodule update'
-
-# update dotfiles
-source ~/.zsh/dotfiles.zsh
-${DOTFILES}/update
-
-# mac os settings
-source ~/.zsh/mac.zsh
-
-# linux os settings
-source ~/.zsh/linux.zsh
