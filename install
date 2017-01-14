@@ -41,9 +41,9 @@ do
 			mv -n $INSTALLDIR/$i $INSTALLDIR/$i.old 
 		fi
 	fi
-	if [ -e "${dotfiles}/${i}.osx" && "$OSTYPE" == "darwin"* ]; then
+	if [ -e "${dotfiles}/${i}.osx" ] && [ "$OSTYPE" == "darwin"* ]; then
 		ln -s "${dotfiles}/${i}.osx" $INSTALLDIR/$i;
-	elif [ -e "${dotfiles}/${i}.linux" && "$OSTYPE" == "linux-gnu" ]; then
+	elif [ -e "${dotfiles}/${i}.linux" ] && [ "$OSTYPE" == "linux-gnu" ]; then
 		ln -s "${dotfiles}/${i}.linux" $INSTALLDIR/$i;
 	else
 		ln -s ${dotfiles}/${i} $INSTALLDIR/$i;
