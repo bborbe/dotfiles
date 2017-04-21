@@ -23,7 +23,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	export PATH=/opt/nsq/bin:$PATH
 
 	# Postgresql
-	export PATH=/opt/local/lib/postgresql93/bin:$PATH
+	export PATH=/opt/local/lib/postgresql96/bin:$PATH
 
 	# Mysql
 	export PATH=/opt/local/lib/mysql55/bin:$PATH
