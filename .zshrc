@@ -86,7 +86,7 @@ export PERL_UNICODE=SDL
 
 # Mavaen
 export M2_REPO=~/.m2/repository
-export M2_HOME=/opt/apache-maven-3.2.5
+export M2_HOME=/opt/apache-maven-3.3.9
 export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
 export PATH=$M2_HOME/bin:$PATH
 
@@ -167,3 +167,5 @@ fi
 
 # git alias
 alias gps='git pull && git submodule update'
+
+export PATH="/opt/google-cloud-sdk/bin:$PATH"
