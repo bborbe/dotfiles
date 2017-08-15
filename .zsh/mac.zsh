@@ -31,6 +31,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Vagrant
 	export PATH=/Applications/Vagrant/bin:$PATH
 
+	# Mysql
+	export PATH=/opt/local/lib/mysql57/bin:$PATH
+
 	# Java
 	if type "/usr/libexec/java_home" > /dev/null; then
 			export JAVA_HOME=`/usr/libexec/java_home`
