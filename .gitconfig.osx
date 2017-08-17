@@ -9,7 +9,7 @@
 [core]
 	excludesfile = ~/.gitignore_global
 	autocrlf = input
-	editor = vi
+	editor = vim
 	pager = more -R
 [push]
 	default = simple

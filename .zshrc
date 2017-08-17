@@ -58,8 +58,8 @@ export ALTERNATE_EDITOR=""
 #export VISUAL="emacsclient -c -a emacs"         # $VISUAL opens in GUI with non-daemon as alternate
 #export EDITOR="ec"         # $EDITOR should open in terminal
 #export VISUAL="ec"         # $VISUAL opens in GUI with non-daemon as alternate
-export EDITOR="vi"         # $EDITOR should open in terminal
-export VISUAL="vi"         # $VISUAL opens in GUI with non-daemon as alternate
+export EDITOR="vim"         # $EDITOR should open in terminal
+export VISUAL="vim"         # $VISUAL opens in GUI with non-daemon as alternate
 
 # update dotfiles
 source ~/.zsh/dotfiles.zsh
