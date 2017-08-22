@@ -106,6 +106,9 @@ export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 # Wget
 alias get="wget --no-check-certificate"
 
+# Profitbricks
+alias pb=profitbricks
+
 # CoreOS
 export COREOS_ENDPOINT=172.16.30.10
 export FLEETCTL_ENDPOINT=http://$COREOS_ENDPOINT:4001
