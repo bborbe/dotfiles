@@ -1,6 +1,13 @@
 # Dotfiles
 
-My dotfiles
+## Install
+
+```
+cd ~
+git clone https://github.com/bborbe/dotfiles.git
+cd dotfiles
+./install
+```
 
 ## Copyright and license
 
