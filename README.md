@@ -3,10 +3,9 @@
 ## Install
 
 ```
-cd ~
-git clone https://github.com/bborbe/dotfiles.git
-cd dotfiles
-./install
+sudo apt-get install zsh git-core
+git -C ~/dotfiles pull || git clone https://github.com/bborbe/dotfiles.git ~/dotfiles
+cd ~/dotfiles && ./install
 ```
 
 ## Copyright and license
