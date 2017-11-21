@@ -172,3 +172,5 @@ fi
 alias gps='git pull && git submodule update'
 
 export PATH="/opt/google-cloud-sdk/bin:$PATH"
+
+eval "$(direnv hook zsh)"
