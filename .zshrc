@@ -80,6 +80,9 @@ source ~/.zsh/mac.zsh
 # linux os settings
 source ~/.zsh/linux.zsh
 
+# sm settings
+source ~/.zsh/sm.zsh
+
 # Perl
 export PERL_LWP_SSL_VERIFY_HOSTNAME=0
 export PERL_UNICODE=SDL
