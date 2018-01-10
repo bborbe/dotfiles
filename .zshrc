@@ -180,3 +180,6 @@ export PATH="/opt/google-cloud-sdk/bin:$PATH"
 if type "direnv" > /dev/null; then
 	eval "$(direnv hook zsh)"
 fi
+
+# alias datetime
+alias datetime='date "+%Y%m%d%H%M%S"'
