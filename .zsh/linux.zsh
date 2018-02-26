@@ -1,4 +1,4 @@
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
+if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux-gnueabihf" ]]; then
 
 	# Golang
 	export GOPATH="$HOME/go"
