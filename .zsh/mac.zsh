@@ -7,9 +7,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# VS Code
 	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
-	# Postgresql
-	export PATH=/opt/local/lib/postgresql10/bin:$PATH
-
 	# Docker
 	export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH
 
@@ -23,10 +20,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	export PATH=/opt/nsq/bin:$PATH
 
 	# Postgresql
-	export PATH=/opt/local/lib/postgresql96/bin:$PATH
-
-	# Mysql
-	export PATH=/opt/local/lib/mysql55/bin:$PATH
+	export PATH=/opt/local/lib/postgresql10/bin:$PATH
 
 	# Vagrant
 	export PATH=/Applications/Vagrant/bin:$PATH
