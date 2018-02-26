@@ -1,3 +1,8 @@
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-	#echo "linux"
+
+	# Golang
+	export GOPATH="$HOME/go"
+	export GO=$GOPATH
+	export GOROOT=/opt/go
+	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 fi

@@ -96,16 +96,6 @@ export PATH=$M2_HOME/bin:$PATH
 # Java
 export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
 
-# Golang
-export GOPATH="$HOME/Documents/workspaces/go"
-export GO=$GOPATH
-export GOROOT=/opt/go
-if type "launchctl" > /dev/null; then
-    launchctl setenv GOROOT /opt/go
-    launchctl setenv GOPATH ~/Documents/workspaces/go
-fi
-export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
-
 # Wget
 alias get="wget --no-check-certificate"
 

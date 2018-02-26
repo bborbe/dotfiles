@@ -35,4 +35,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	# Emacs
 	export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
+
+	# Golang
+	export GOPATH="$HOME/Documents/workspaces/go"
+	export GO=$GOPATH
+	export GOROOT=/opt/go
+	if type "launchctl" > /dev/null; then
+		launchctl setenv GOROOT /opt/go
+		launchctl setenv GOPATH ~/Documents/workspaces/go
+	fi
+	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 fi
