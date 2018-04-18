@@ -34,3 +34,8 @@
 	trustExitCode = true
 [url "ssh://git@bitbucket.apps.seibert-media.net:7999/"]
 	insteadOf = https://bitbucket.apps.seibert-media.net/scm/
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
