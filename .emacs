@@ -95,6 +95,7 @@
     (helm-for-files)))
 
 ; go mode
+(setq gofmt-command "goimports")
 (package-install 'go)
 (package-install 'go-autocomplete)
 (require 'go-mode)
