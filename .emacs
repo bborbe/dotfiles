@@ -114,10 +114,7 @@
 (add-to-list 'exec-path "~/Documents/workspaces/go/bin")
 (require 'go-flymake)
 (require 'go-flycheck)
-
-; Nope, I want my copies in the system temp dir.
-(setq flymake-run-in-place nil)
-; This lets me say where my temp dir is.
+(setq flymake-run-in-place t)
 (setq temporary-file-directory "~/.emacs.d/tmp/")
 
 ; markdown
