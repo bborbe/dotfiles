@@ -111,12 +111,12 @@
 (ac-config-default)
 
 ; goflymake
-(add-to-list 'load-path "~/Documents/workspaces/go/src/github.com/dougm/goflymake")
-(add-to-list 'exec-path "~/Documents/workspaces/go/bin")
-(require 'go-flymake)
-(require 'go-flycheck)
-(setq flymake-run-in-place t)
-(setq temporary-file-directory "~/.emacs.d/tmp/")
+; (add-to-list 'load-path "~/Documents/workspaces/go/src/github.com/dougm/goflymake")
+; (add-to-list 'exec-path "~/Documents/workspaces/go/bin")
+; (require 'go-flymake)
+; (require 'go-flycheck)
+; (setq flymake-run-in-place nil)
+; (setq temporary-file-directory "~/.emacs.d/tmp/")
 
 ; markdown
 (package-install 'markdown-preview-mode)
