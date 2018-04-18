@@ -97,7 +97,7 @@
 ; go mode
 (package-install 'go)
 (package-install 'go-autocomplete)
-(require 'go-mode-autoloads)
+(require 'go-mode)
 (add-to-list 'exec-path "/opt/go/bin")
 (add-to-list 'exec-path "~/Documents/workspaces/go/bin")
 (add-hook 'before-save-hook 'gofmt-before-save)
