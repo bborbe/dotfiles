@@ -131,7 +131,7 @@
  '(markdown-command "/opt/local/bin/pandoc")
  '(package-selected-packages
    (quote
-    (go-imports yaml-mode evil-visual-mark-mode helm-swoop go-autocomplete go helm helm-projectile projectile let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
+    (haskell-mode go-imports yaml-mode evil-visual-mark-mode helm-swoop go-autocomplete go helm helm-projectile projectile let-alist ## evil markdown-preview-mode git-commit-insert-issue gitignore-mode gitconfig-mode gitconfig gitattributes-mode git-commit git-command git flycheck auto-complete))))
 
 ; set backup directory
 (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
