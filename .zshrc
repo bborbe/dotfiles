@@ -175,3 +175,6 @@ fi
 
 # alias datetime
 alias datetime='date "+%Y%m%d%H%M%S"'
+
+# kubectl
+source <(kubectl completion zsh) 
