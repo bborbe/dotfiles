@@ -7,9 +7,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# VS Code
 	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
-	# Docker
-	export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH
-
 	# Phantomjs
 	export PATH=/opt/phantomjs/bin:$PATH
 
@@ -45,4 +42,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 		launchctl setenv GOPATH ~/Documents/workspaces/go
 	fi
 	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+
+	# Docker
+	export PATH=$PATH:/Applications/Docker.app/Contents/Resources/bin
 fi
