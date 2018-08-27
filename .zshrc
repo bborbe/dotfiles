@@ -138,9 +138,9 @@ PROMPT='%n@%m %{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_b
 #PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[blue]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
 
 function zle-line-init zle-keymap-select {
-    VIM_PROMPT="%{$fg_bold[red]%} <N> %{$reset_color%}"
-    RPS1="${${KEYMAP/vicmd/$VIM_PROMPT}/(main|viins)} $EPS1"
-    zle reset-prompt
+	VIM_PROMPT="%{$fg_bold[red]%} <N> %{$reset_color%}"
+	RPS1="${${KEYMAP/vicmd/$VIM_PROMPT}/(main|viins)} $EPS1"
+	zle reset-prompt
 }
 
 zle -N zle-line-init
@@ -159,8 +159,8 @@ bindkey "^[[B" down-line-or-beginning-search # Down
 # pyenv
 export PATH="$HOME/.pyenv/bin:$PATH"
 if type "pyenv" > /dev/null; then
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
+	eval "$(pyenv init -)"
+	eval "$(pyenv virtualenv-init -)"
 fi
 
 # git alias
@@ -177,4 +177,6 @@ fi
 alias datetime='date "+%Y%m%d%H%M%S"'
 
 # kubectl
-source <(kubectl completion zsh) 
+if type "kubectl" > /dev/null; then
+	source <(kubectl completion zsh)
+fi
