@@ -1,6 +1,9 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
+	# Update Crontab
+	cat ~/.crontab | crontab -
+
 	# Vim
 	alias vim='open -a /Applications/MacPorts/MacVim.app $1'
 
