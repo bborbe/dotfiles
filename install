@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 files=(
-	.profile
-	.vimrc
-	.vim
-	.gitignore_global
-	.gitconfig
 	.emacs
-	.hgrc
-	.hgignore_global
-	.zshrc
-	.zsh
-	.stCommitMsg
 	.fonts.conf
+	.gitconfig
+	.gitignore_global
+	.hgignore_global
+	.hgrc
+	.profile
+	.stCommitMsg
+	.vim
+	.vimrc
+	.zsh
+	.zshrc
 )
 
 ################################################################################
