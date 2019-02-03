@@ -16,9 +16,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Chromedriver
 	export PATH=/opt/chromedriver/bin:$PATH
 
-	# Nsq
-	export PATH=/opt/nsq/bin:$PATH
-
 	# Postgresql
 	export PATH=/opt/local/lib/postgresql10/bin:$PATH
 
