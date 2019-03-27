@@ -45,4 +45,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	# Docker
 	export PATH=$PATH:/Applications/Docker.app/Contents/Resources/bin
+
+	# PhantomJS
+	export PHANTOMJS_PATH="/opt/phantomjs-2.1.1-macosx/bin/phantomjs"
 fi
