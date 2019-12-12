@@ -1,6 +1,31 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
+	# Golang
+	export GOPATH=$PATH:$HOME/Documents/workspaces/go
+	export GO=$GOPATH
+	#export GOROOT=/opt/go
+	if type "launchctl" > /dev/null; then
+		#launchctl setenv GOROOT /opt/go
+		launchctl setenv GOPATH ~/Documents/workspaces/go
+	fi
+	export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+	# google-cloud-sdk
+	export PATH=$PATH:/opt/google-cloud-sdk/bin
+
+	# The next line updates PATH for the Google Cloud SDK.
+	if [ -f '/opt/google-cloud-sdk/path.zsh.inc' ]; then . '/opt/google-cloud-sdk/path.zsh.inc'; fi
+
+	# The next line enables shell command completion for gcloud.
+	if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/google-cloud-sdk/completion.zsh.inc'; fi
+
+	# Docker
+	export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH:
+
+	# Mono
+	export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/Current/bin
+
 	# Update Crontab
 	cat ~/.crontab | crontab -
 
@@ -11,19 +36,19 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
 	# Phantomjs
-	export PATH=/opt/phantomjs/bin:$PATH
+	export PATH=$PATH:/opt/phantomjs/bin
 
 	# Chromedriver
-	export PATH=/opt/chromedriver/bin:$PATH
+	export PATH=$PATH:/opt/chromedriver/bin
 
 	# Postgresql
-	export PATH=/opt/local/lib/postgresql10/bin:$PATH
+	export PATH=$PATH:/opt/local/lib/postgresql10/bin
 
 	# Vagrant
-	export PATH=/Applications/Vagrant/bin:$PATH
+	export PATH=$PATH:/Applications/Vagrant/bin
 
 	# Mysql
-	export PATH=/opt/local/lib/mysql57/bin:$PATH
+	export PATH=$PATH:/opt/local/lib/mysql57/bin
 
 	# Java
 	if type "/usr/libexec/java_home" > /dev/null; then
@@ -31,22 +56,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	fi
 
 	# Emacs
-	export PATH=/Applications/Emacs.app/Contents/MacOS/bin:$PATH
-
-	# Golang
-	export GOPATH="$HOME/Documents/workspaces/go"
-	export GO=$GOPATH
-	#export GOROOT=/opt/go
-	if type "launchctl" > /dev/null; then
-		#launchctl setenv GOROOT /opt/go
-		launchctl setenv GOPATH ~/Documents/workspaces/go
-	fi
-	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
-
-	# Docker
-	export PATH=$PATH:/Applications/Docker.app/Contents/Resources/bin
+	export PATH=$PATH:/Applications/Emacs.app/Contents/MacOS/bin
 
 	# PhantomJS
-	export PATH=$PATH:/opt/phantomjs-2.1.1-macosx/bin
-	export PHANTOMJS_PATH="/opt/phantomjs-2.1.1-macosx/bin/phantomjs"
+	export PATH=$PATH:$PATH:/opt/phantomjs-2.1.1-macosx/bin
+	export PHANTOMJS_PATH=$PATH:"/opt/phantomjs-2.1.1-macosx/bin/phantomjs"
+
 fi

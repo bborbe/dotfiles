@@ -93,7 +93,7 @@ export PERL_UNICODE=SDL
 export M2_REPO=~/.m2/repository
 export M2_HOME=/opt/apache-maven-3.3.9
 export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
-export PATH=$M2_HOME/bin:$PATH
+export PATH=$PATH:$M2_HOME/bin
 
 # Java
 export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
@@ -167,8 +167,6 @@ fi
 alias gps='git pull && git submodule update'
 alias git-delete-merged-branches='git branch --merged | egrep -v "(^\*|master|dev)" | xargs --no-run-if-empty git branch -d'
 
-export PATH="/opt/google-cloud-sdk/bin:$PATH"
-
 if type "direnv" > /dev/null; then
 	eval "$(direnv hook zsh)"
 fi
@@ -180,9 +178,3 @@ alias datetime='date "+%Y%m%d%H%M%S"'
 if type "kubectl" > /dev/null; then
 	source <(kubectl completion zsh)
 fi
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/opt/google-cloud-sdk/path.zsh.inc' ]; then . '/opt/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/google-cloud-sdk/completion.zsh.inc'; fi
