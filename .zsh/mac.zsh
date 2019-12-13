@@ -2,7 +2,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
 	# Golang
-	export GOPATH=$PATH:$HOME/Documents/workspaces/go
+	export GOPATH=$HOME/Documents/workspaces/go
 	export GO=$GOPATH
 	#export GOROOT=/opt/go
 	if type "launchctl" > /dev/null; then
