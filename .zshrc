@@ -178,3 +178,6 @@ alias datetime='date "+%Y%m%d%H%M%S"'
 if type "kubectl" > /dev/null; then
 	source <(kubectl completion zsh)
 fi
+
+# kustomize
+alias kustomize='kubectl kustomize'
