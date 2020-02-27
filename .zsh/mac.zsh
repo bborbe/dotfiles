@@ -4,7 +4,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Golang
 	export GOPATH=$HOME/Documents/workspaces/go
 	export GO=$GOPATH
-	#export GOROOT=/opt/go
+	export GOROOT=/opt/go
 	if type "launchctl" > /dev/null; then
 		#launchctl setenv GOROOT /opt/go
 		launchctl setenv GOPATH ~/Documents/workspaces/go
