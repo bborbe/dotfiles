@@ -20,9 +20,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# The next line enables shell command completion for gcloud.
 	if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/google-cloud-sdk/completion.zsh.inc'; fi
 
-	# Docker
-	export PATH=/Applications/Docker.app/Contents/Resources/bin:$PATH:
-
 	# Mono
 	export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/Current/bin
 
