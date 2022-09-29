@@ -41,6 +41,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# VS Code
 	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
+    # Flutter
+	export PATH=$PATH:$HOME/Documents/workspaces/flutter/bin
+
 	# Phantomjs
 	export PATH=$PATH:/opt/phantomjs/bin
 
