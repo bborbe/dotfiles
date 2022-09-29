@@ -71,4 +71,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	export PATH=$PATH:$PATH:/opt/phantomjs-2.1.1-macosx/bin
 	export PHANTOMJS_PATH=$PATH:"/opt/phantomjs-2.1.1-macosx/bin/phantomjs"
 
+	# Python
+	#export PATH=$(pyenv root)/shims:$PATH
+	export PYENV_ROOT="$HOME/.pyenv"
+	export PATH="$PYENV_ROOT/bin:$PATH"    # if `pyenv` is not already on PATH
+	eval "$(pyenv init --path)"
+	eval "$(pyenv init -)"
 fi
