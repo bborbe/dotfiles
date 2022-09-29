@@ -13,6 +13,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	export GOPATH=$HOME/Documents/workspaces/go
 	export GO=$GOPATH
 	export GOROOT=/opt/go
+	export GO_TEST_PARALLEL="$(sysctl -n hw.ncpu)"
 	if type "launchctl" > /dev/null; then
 		#launchctl setenv GOROOT /opt/go
 		launchctl setenv GOPATH ~/Documents/workspaces/go
