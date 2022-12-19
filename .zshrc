@@ -165,7 +165,7 @@ fi
 
 # git alias
 alias gps='git pull && git submodule update'
-alias git-delete-merged-branches='git branch --merged | egrep -v "(^\*|master|dev)" | xargs --no-run-if-empty git branch -d'
+alias git-delete-merged-branches='git branch --merged | grep -v -E "(^\*|master|staging|dev)" | xargs --no-run-if-empty git branch -d'
 
 if type "direnv" > /dev/null; then
 	eval "$(direnv hook zsh)"
