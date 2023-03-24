@@ -2,7 +2,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
 	# Docker
-	export DOCKER_HOST=tcp://127.0.0.1:1111
+	# export DOCKER_HOST=tcp://127.0.0.1:1111
 
 	# Kubectl
 	alias k8sdev="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
