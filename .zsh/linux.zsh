@@ -5,4 +5,6 @@ if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux-gnueabihf" ]]; then
 	export GO=$GOPATH
 	export GOROOT=/opt/go
 	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+
+	export PATH=/snap/bin:$PATH
 fi
