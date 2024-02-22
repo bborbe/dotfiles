@@ -5,7 +5,7 @@
 	branch = auto
 [user]
 	name = Benjamin Borbe
-	email = bborbe@rocketnews.de
+	email = benjamin.borbe@gmail.com
 [core]
 	excludesfile = ~/.gitignore_global
 	autocrlf = input
