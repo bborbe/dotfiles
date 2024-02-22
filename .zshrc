@@ -51,9 +51,12 @@ plugins=(git)
 
 export PAGER=more
 export BLOCKSIZE=K
-export HISTSIZE=50000
 export PATH=/opt/local/libexec/gnubin:/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 export LC_ALL=en_US.UTF-8
+
+export HISTSIZE=1000000000
+export SAVEHIST=$HISTSIZE
+setopt EXTENDED_HISTORY
 
 export ALTERNATE_EDITOR=""
 #export EDITOR="emacsclient -t"                  # $EDITOR should open in terminal
