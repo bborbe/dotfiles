@@ -4,12 +4,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Docker
 	# export DOCKER_HOST=tcp://127.0.0.1:1111
 
-	# Kubectl
-	alias k8sdev="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
-	alias k8sstaging="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_staging"
-	alias k8sprod="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_prod"
-	alias k8sfire="kubectl config use-context fire"
-
 	# Golang
 	export GOPATH=$HOME/Documents/workspaces/go
 	export GO=$GOPATH

@@ -88,6 +88,9 @@ source ~/.zsh/linux.zsh
 # sm settings
 source ~/.zsh/sm.zsh
 
+# k8s settings
+source ~/.zsh/k8s.zsh
+
 # Perl
 export PERL_LWP_SSL_VERIFY_HOSTNAME=0
 export PERL_UNICODE=SDL
