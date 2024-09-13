@@ -72,4 +72,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	export PATH="$PYENV_ROOT/bin:$PATH"    # if `pyenv` is not already on PATH
 	eval "$(pyenv init --path)"
 	eval "$(pyenv init -)"
+
+	# Rancher Desktop
+	# export PATH=/Users/bborbe/.rd/bin:$PATH
+	# export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
+
+	# Docker Desktop
+	export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
 fi
