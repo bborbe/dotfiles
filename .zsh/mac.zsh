@@ -74,9 +74,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	eval "$(pyenv init -)"
 
 	# Rancher Desktop
-	# export PATH=/Users/bborbe/.rd/bin:$PATH
-	# export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
+	export PATH=/Users/bborbe/.rd/bin:$PATH
+	export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
+	zstyle ':completion:*:*:-command-:*:*' ignored-patterns 'kuberlr'
 
 	# Docker Desktop
-	export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
+	# export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
 fi
