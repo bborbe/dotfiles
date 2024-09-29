@@ -36,6 +36,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# VS Code
 	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
+	# Dotnet
+	export PATH=$PATH:/usr/local/share/dotnet
+
     # Flutter
 	export PATH=$PATH:$HOME/Documents/workspaces/flutter/bin
 
