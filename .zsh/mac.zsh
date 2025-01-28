@@ -13,7 +13,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 		#launchctl setenv GOROOT /opt/go
 		launchctl setenv GOPATH ~/Documents/workspaces/go
 	fi
-	export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 	# google-cloud-sdk
 	export PATH=$PATH:/opt/google-cloud-sdk/bin
