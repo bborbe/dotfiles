@@ -30,12 +30,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Update Crontab
 	cat ~/.crontab | crontab -
 
-	# Vim
-	alias vim='open -a /Applications/MacPorts/MacVim.app $1'
-
-	# VS Code
-	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
-
 	# Dotnet
 	export PATH=$PATH:/usr/local/share/dotnet
 
@@ -83,4 +77,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	# Docker Desktop
 	# export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
+
+		# VS Code
+		alias code='open -a /Applications/Visual\ Studio\ Code.app $1'
+		alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
+
+		# Alias for pssh
+		alias parallel-ssh='pssh'
 fi
