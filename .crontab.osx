@@ -1,2 +1,2 @@
-*   *   *   *   *   ~/Documents/workspaces/scripts/cron_ip.sh
-*/5 *   *   *   *   ~/Documents/workspaces/scripts/cron_monitoring.sh
+# *   *   *   *   *   ~/Documents/workspaces/scripts/cron_ip.sh
+# */5 *   *   *   *   ~/Documents/workspaces/scripts/cron_monitoring.sh
