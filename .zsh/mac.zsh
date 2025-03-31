@@ -1,9 +1,6 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
-	# Docker
-	# export DOCKER_HOST=tcp://127.0.0.1:1111
-
 	# Golang
 	export GOPATH=$HOME/Documents/workspaces/go
 	export GO=$GOPATH
@@ -33,7 +30,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Dotnet
 	export PATH=$PATH:/usr/local/share/dotnet
 
-    # Flutter
+	# Flutter
 	export PATH=$PATH:$HOME/Documents/workspaces/flutter/bin
 
 	# Phantomjs
@@ -71,17 +68,18 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	eval "$(pyenv init -)"
 
 	# Rancher Desktop
-	export PATH=/Users/bborbe/.rd/bin:$PATH
-	export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
-	zstyle ':completion:*:*:-command-:*:*' ignored-patterns 'kuberlr'
+	# export PATH=/Users/bborbe/.rd/bin:$PATH
+	# export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
+	# zstyle ':completion:*:*:-command-:*:*' ignored-patterns 'kuberlr'
 
 	# Docker Desktop
-	# export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
+	export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
+	# export DOCKER_HOST=tcp://127.0.0.1:1111
 
-		# VS Code
-		alias code='open -a /Applications/Visual\ Studio\ Code.app $1'
-		alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
+	# VS Code
+	alias code='open -a /Applications/Visual\ Studio\ Code.app $1'
+	alias vscode='open -a /Applications/Visual\ Studio\ Code.app $1'
 
-		# Alias for pssh
-		alias parallel-ssh='pssh'
+	# Alias for pssh
+	alias parallel-ssh='pssh'
 fi
