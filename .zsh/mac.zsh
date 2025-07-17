@@ -21,6 +21,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# The next line enables shell command completion for gcloud.
 	if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/google-cloud-sdk/completion.zsh.inc'; fi
 
+	# Use python 3.12 for gcloud sdk
+	export CLOUDSDK_PYTHON=/opt/local/bin/python3.12
+
 	# Mono
 	export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/Current/bin
 
@@ -82,4 +85,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	# Alias for pssh
 	alias parallel-ssh='pssh'
+
+	# Sleep 
+	alias sleepnow='sudo /usr/bin/pmset sleepnow'
 fi
