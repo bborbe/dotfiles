@@ -66,8 +66,15 @@ export ALTERNATE_EDITOR=""
 export EDITOR="vim"         # $EDITOR should open in terminal
 export VISUAL="vim"         # $VISUAL opens in GUI with non-daemon as alternate
 
+source ~/.zsh/default.zsh
+
+# mac os settings
+source ~/.zsh/mac.zsh
+
+# linux os settings
+source ~/.zsh/linux.zsh
+
 # update dotfiles
-source ~/.zsh/dotfiles.zsh
 ${DOTFILES}/update
 
 # Oh-My-Zsh
@@ -78,12 +85,6 @@ source ~/.zsh/colors.zsh
 
 # Emacs
 source ~/.zsh/emacs.zsh
-
-# mac os settings
-source ~/.zsh/mac.zsh
-
-# linux os settings
-source ~/.zsh/linux.zsh
 
 # sm settings
 source ~/.zsh/sm.zsh
