@@ -3,7 +3,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
-  ssh-add --apple-load-keychain
+  ssh-add -q --apple-load-keychain
 
 	# Golang
 	export GOPATH=$HOME/Documents/workspaces/go
