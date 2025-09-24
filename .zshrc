@@ -49,7 +49,7 @@ ZSH_THEME="robbyrussell"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 plugins=(git)
 
-export PAGER=more
+export PAGER="less -RFX"
 export BLOCKSIZE=K
 export PATH=/opt/local/libexec/gnubin:/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 export LC_ALL=en_US.UTF-8
