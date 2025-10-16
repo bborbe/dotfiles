@@ -6,6 +6,7 @@
 [user]
 	name = Benjamin Borbe
 	email = benjamin.borbe@gmail.com
+	signingkey = 21260C2C6244AC77
 [core]
 	excludesfile = ~/.gitignore_global
 	autocrlf = input
@@ -20,6 +21,7 @@
 	helper = cache
 [commit]
 	template = ~/.stCommitMsg
+	gpgsign = true
 [difftool]
 	prompt = false
 [merge]
