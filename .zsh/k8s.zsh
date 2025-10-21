@@ -25,11 +25,11 @@ kubectl() {
 }
 
 # K8s switch context
-alias k8sdev="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
-alias k8sstaging="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_staging"
-alias k8sprod="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_prod"
-alias k8shell="command kubectl config use-context hell"
-alias k8squant="command kubectl config use-context quant"
+#alias k8sdev="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
+#alias k8sstaging="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_staging"
+#alias k8sprod="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_prod"
+#alias k8shell="command kubectl config use-context hell"
+#alias k8squant="command kubectl config use-context quant"
 
 # Kubectl with context
 alias kubectldev="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_dev"
