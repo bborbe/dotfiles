@@ -15,12 +15,12 @@ kubectl() {
 		return
 	fi
 
-	echo "ERROR: Please use environment-specific aliases instead:"
-	echo "  - kubectldev (development)"
-	echo "  - kubectlstaging (staging)"
-	echo "  - kubectlprod (production)"
-	echo "  - kubectlhell (hell)"
-	echo "  - kubectlquant (quant)"
+	echo "ERROR: Please use environment-specific aliases instead:" >&2
+	echo "  - kubectldev (development)" >&2
+	echo "  - kubectlstaging (staging)" >&2
+	echo "  - kubectlprod (production)" >&2
+	echo "  - kubectlhell (hell)" >&2
+	echo "  - kubectlquant (quant)" >&2
 	return 1
 }
 
