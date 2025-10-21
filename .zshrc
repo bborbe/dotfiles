@@ -99,11 +99,11 @@ export PERL_UNICODE=SDL
 # Mavaen
 export M2_REPO=~/.m2/repository
 export M2_HOME=/opt/apache-maven-3.3.9
-export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
+export MAVEN_OPTS="-Dfile.encoding=UTF-8 -Djava.awt.headless=true -Xmx1024M -XX:MaxMetaspaceSize=512m"
 export PATH=$PATH:$M2_HOME/bin
 
 # Java
-export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M  -XX:MaxPermSize=512m -XX:MaxMetaspaceSize=512m"
+export JAVA_OPTS="-Djava.awt.headless=true -Xmx1024M -XX:MaxMetaspaceSize=512m"
 
 # Wget
 alias get="wget --no-check-certificate"
@@ -180,11 +180,3 @@ fi
 
 # alias datetime
 alias datetime='date "+%Y%m%d%H%M%S"'
-
-# kubectl
-if type "kubectl" > /dev/null; then
-	source <(kubectl completion zsh)
-fi
-
-# kustomize
-alias kustomize='kubectl kustomize'

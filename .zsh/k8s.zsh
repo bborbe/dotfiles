@@ -1,14 +1,39 @@
 
-# K8s switch context
-alias k8sdev="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
-alias k8sstaging="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_staging"
-alias k8sprod="kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_prod"
-alias k8shell="kubectl config use-context hell"
-alias k8squant="kubectl config use-context quant"
+# kubectl
+if type "kubectl" > /dev/null; then
+	source <(command kubectl completion zsh)
+fi
 
-# Kubectl with content
-alias kubectldev="kubectl --context gke_gce-smedia-k8s_europe-west3-c_dev"
-alias kubectlstaging="kubectl --context gke_gce-smedia-k8s_europe-west3-c_staging"
-alias kubectlprod="kubectl --context gke_gce-smedia-k8s_europe-west3-c_prod"
-alias kubectlhell="kubectl --context hell"
-alias kubectlquant="kubectl --context quant"
+# kustomize
+alias kustomize='command kubectl kustomize'
+
+## Prevent direct kubectl usage - use environment-specific aliases instead
+kubectl() {
+	# Allow completion to work - check for __complete subcommand or completion context
+	if [[ "$1" == "__complete" ]] || [[ "${funcstack[2]}" == _* ]]; then
+		command kubectl "$@"
+		return
+	fi
+
+	echo "ERROR: Please use environment-specific aliases instead:"
+	echo "  - kubectldev (development)"
+	echo "  - kubectlstaging (staging)"
+	echo "  - kubectlprod (production)"
+	echo "  - kubectlhell (hell)"
+	echo "  - kubectlquant (quant)"
+	return 1
+}
+
+# K8s switch context
+alias k8sdev="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_dev"
+alias k8sstaging="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_staging"
+alias k8sprod="command kubectl config use-context gke_gce-smedia-k8s_europe-west3-c_prod"
+alias k8shell="command kubectl config use-context hell"
+alias k8squant="command kubectl config use-context quant"
+
+# Kubectl with context
+alias kubectldev="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_dev"
+alias kubectlstaging="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_staging"
+alias kubectlprod="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_prod"
+alias kubectlhell="command kubectl --context hell"
+alias kubectlquant="command kubectl --context quant"
