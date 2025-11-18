@@ -34,6 +34,8 @@
 [mergetool "sourcetree"]
 	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
+[url "ssh://git@bitbucket.seibert.tools:7999/"]
+	insteadOf = https://bitbucket.seibert.tools/scm/
 [url "ssh://git@bitbucket.apps.seibert-media.net:7999/"]
 	insteadOf = https://bitbucket.apps.seibert-media.net/scm/
 [filter "lfs"]
