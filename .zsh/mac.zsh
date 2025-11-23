@@ -17,6 +17,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	fi
 	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
+	# Rust/Cargo
+	export PATH=$HOME/.cargo/bin:$PATH
+
 	# google-cloud-sdk
 	export PATH=$PATH:/opt/google-cloud-sdk/bin
 

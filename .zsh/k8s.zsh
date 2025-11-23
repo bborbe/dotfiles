@@ -1,6 +1,8 @@
 
 # unset kubectl context
-command kubectl config unset current-context
+if type "kubectl" > /dev/null 2>&1; then
+	command kubectl config unset current-context
+fi
 
 # kubectl
 if type "kubectl" > /dev/null; then
