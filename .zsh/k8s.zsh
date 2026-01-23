@@ -29,9 +29,9 @@ kubectl() {
 	return 1
 }
 
-# Kubectl with context
-alias kubectldev="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_dev"
-alias kubectlstaging="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_staging"
-alias kubectlprod="command kubectl --context gke_gce-smedia-k8s_europe-west3-c_prod"
-alias kubectlhell="command kubectl --context hell"
-alias kubectlquant="command kubectl --context quant"
+## Kubectl with isolated configs
+#alias kubectldev="KUBECONFIG=\${HOME}/.kube/octopus-dev kubectl"
+#alias kubectlstaging="KUBECONFIG=\${HOME}/.kube/octopus-staging kubectl"
+#alias kubectlprod="KUBECONFIG=\${HOME}/.kube/octopus-prod kubectl"
+#alias kubectlhell="KUBECONFIG=\${HOME}/.kube/hell kubectl"
+#alias kubectlquant="KUBECONFIG=\${HOME}/.kube/quant kubectl"
