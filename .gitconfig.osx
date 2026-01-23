@@ -13,7 +13,7 @@
 	editor = vim
 	pager = more -R
 [push]
-	default = simple
+	default = current
 	followTags = true
 [diff]
 	tool = vimdiff
