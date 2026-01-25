@@ -30,8 +30,17 @@ kubectl() {
 }
 
 ## Kubectl with isolated configs
-#alias kubectldev="KUBECONFIG=\${HOME}/.kube/octopus-dev kubectl"
-#alias kubectlstaging="KUBECONFIG=\${HOME}/.kube/octopus-staging kubectl"
-#alias kubectlprod="KUBECONFIG=\${HOME}/.kube/octopus-prod kubectl"
-#alias kubectlhell="KUBECONFIG=\${HOME}/.kube/hell kubectl"
-#alias kubectlquant="KUBECONFIG=\${HOME}/.kube/quant kubectl"
+kubectldev() { KUBECONFIG="${HOME}/.kube/octopus-dev" command kubectl "$@"; }
+kubectlstaging() { KUBECONFIG="${HOME}/.kube/octopus-staging" command kubectl "$@"; }
+kubectlprod() { KUBECONFIG="${HOME}/.kube/octopus-prod" command kubectl "$@"; }
+kubectlhell() { KUBECONFIG="${HOME}/.kube/hell" command kubectl "$@"; }
+kubectlquant() { KUBECONFIG="${HOME}/.kube/quant" command kubectl "$@"; }
+
+# Set up completion for wrapper functions
+if type "kubectl" > /dev/null 2>&1; then
+	compdef kubectldev=kubectl
+	compdef kubectlstaging=kubectl
+	compdef kubectlprod=kubectl
+	compdef kubectlhell=kubectl
+	compdef kubectlquant=kubectl
+fi
