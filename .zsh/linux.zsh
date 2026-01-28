@@ -1,10 +1,15 @@
 if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux-gnueabihf" ]]; then
 
-	# Golang
-	export GOPATH="$HOME/go"
-	export GO=$GOPATH
-	export GOROOT=/opt/go
-	export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+  # Auto-start ssh-agent
+  if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+  fi
 
-	export PATH=/snap/bin:$PATH
+  # Golang
+  export GOPATH="$HOME/go"
+  export GO=$GOPATH
+  export GOROOT=/opt/go
+  export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+
+  export PATH=/snap/bin:$PATH
 fi
