@@ -1,4 +1,8 @@
-export DOTFILES=~/dotfiles
+if [ -d ~/Documents/workspaces/dotfiles ]; then
+  export DOTFILES=~/Documents/workspaces/dotfiles
+else
+  export DOTFILES=~/dotfiles
+fi
 
 # init nvm
 export NVM_DIR="$HOME/.nvm"

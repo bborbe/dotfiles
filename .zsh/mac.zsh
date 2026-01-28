@@ -1,6 +1,4 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  export DOTFILES=~/Documents/workspaces/dotfiles
-
 	defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 
   ssh-add -q --apple-load-keychain
