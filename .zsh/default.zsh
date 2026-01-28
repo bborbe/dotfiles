@@ -6,4 +6,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # usx to PATH
-. "$HOME/.local/bin/env"
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
+# add .local/bin to path
+[ -d "$HOME/.local/bin" ] && export PATH="$HOME/.local/bin:$PATH"
