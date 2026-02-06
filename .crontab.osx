@@ -1,2 +1,3 @@
 # *   *   *   *   *   ~/Documents/workspaces/scripts/cron_ip.sh
 # */5 *   *   *   *   ~/Documents/workspaces/scripts/cron_monitoring.sh
+0 *   *   *   *   /Users/bborbe/.pyenv/shims/uv cache clean
