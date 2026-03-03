@@ -100,4 +100,5 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Sleep
 	alias sleepnow='sudo /usr/bin/pmset sleepnow'
 
+  export OCTOPUS_BASE=/Users/bborbe/Documents/workspaces/bitbucket.seibert.tools/OC
 fi
