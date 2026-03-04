@@ -103,4 +103,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   export OCTOPUS_BASE=/Users/bborbe/Documents/workspaces/sm-octopus
 
   alias ij='open -na "IntelliJ IDEA.app" --args "$@"'
+
+  export PR_REVIEWER_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "PR_REVIEWER_TOKEN" -w)
+  export DARK_FACTORY_TOKEN=$(security find-generic-password -a "dark-factory" -s "DARK_FACTORY_TOKEN" -w)
 fi
