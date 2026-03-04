@@ -100,5 +100,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Sleep
 	alias sleepnow='sudo /usr/bin/pmset sleepnow'
 
-  export OCTOPUS_BASE=/Users/bborbe/Documents/workspaces/bitbucket.seibert.tools/OC
+  export OCTOPUS_BASE=/Users/bborbe/Documents/workspaces/sm-octopus
+
+  alias ij='open -na "IntelliJ IDEA.app" --args "$@"'
 fi
