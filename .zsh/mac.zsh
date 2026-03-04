@@ -104,6 +104,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
   alias ij='open -na "IntelliJ IDEA.app" --args "$@"'
 
-  export PR_REVIEWER_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "PR_REVIEWER_TOKEN" -w)
-  export DARK_FACTORY_TOKEN=$(security find-generic-password -a "dark-factory" -s "DARK_FACTORY_TOKEN" -w)
+  export PR_REVIEWER_GITHUB_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "PR_REVIEWER_TOKEN" -w)
+  export DARK_FACTORY_GITHUB_TOKEN=$(security find-generic-password -a "dark-factory" -s "DARK_FACTORY_TOKEN" -w)
 fi
