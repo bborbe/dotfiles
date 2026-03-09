@@ -106,7 +106,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
   export PR_REVIEWER_GITHUB_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "PR_REVIEWER_GITHUB_TOKEN" -w 2>/dev/null)
   export DARK_FACTORY_GITHUB_TOKEN=$(security find-generic-password -a "dark-factory" -s "DARK_FACTORY_GITHUB_TOKEN" -w 2>/dev/null)
-  export DARK_FACTORY_CLAUDE_CONFIG_DIR=$HOME/Documents/workspaces/claude-yolo-config
+  export DARK_FACTORY_CLAUDE_CONFIG_DIR=$HOME/.claude-yolo
   export BITBUCKET_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "BITBUCKET_TOKEN" -w 2>/dev/null)
   export BITBUCKET_ADMIN_TOKEN=$(security find-generic-password -a "bitbucket-admin-token" -s "BITBUCKET_ADMIN_TOKEN" -w 2>/dev/null)
 fi
