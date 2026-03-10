@@ -109,4 +109,5 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   export DARK_FACTORY_CLAUDE_CONFIG_DIR=$HOME/.claude-yolo
   export BITBUCKET_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "BITBUCKET_TOKEN" -w 2>/dev/null)
   export BITBUCKET_ADMIN_TOKEN=$(security find-generic-password -a "bitbucket-admin-token" -s "BITBUCKET_ADMIN_TOKEN" -w 2>/dev/null)
+  export BITBUCKET_READ_TOKEN=$(security find-generic-password -a "bitbucket-read-token" -s "BITBUCKET_READ_TOKEN" -w 2>/dev/null)
 fi
