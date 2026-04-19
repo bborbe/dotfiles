@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 files=(
+	.bashrc
 	.crontab
 	.emacs
 	.fonts.conf

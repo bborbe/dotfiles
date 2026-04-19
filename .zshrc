@@ -184,6 +184,9 @@ alias datetime='date "+%Y%m%d%H%M%S"'
 # Added by Antigravity
 export PATH="/Users/bborbe/.antigravity/antigravity/bin:$PATH"
 
+# Trading backtest data (outside git repo for worktree access)
+export TRADING_BACKTEST_AGENT_DATADIR="$HOME/Documents/workspaces/trading-backtest-agent-data"
+
 # pnpm
 export PNPM_HOME="/Users/bborbe/Library/pnpm"
 case ":$PATH:" in

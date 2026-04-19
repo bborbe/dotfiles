@@ -1,0 +1,6 @@
+# Minimal bashrc for non-interactive bash (screen, make, ssh bash -c).
+# zsh users get the full env via .zshrc; this only covers what bash needs.
+
+export GOPATH="$HOME/go"
+export GOROOT=/opt/go
+export PATH="$GOROOT/bin:$GOPATH/bin:$HOME/Documents/workspaces/scripts:$PATH"
