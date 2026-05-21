@@ -40,6 +40,8 @@
 	insteadOf = https://bitbucket.seibert.tools/scm/
 [url "ssh://git@bitbucket.apps.seibert-media.net:7999/"]
 	insteadOf = https://bitbucket.apps.seibert-media.net/scm/
+[url "git@github.com:seibert-data/"]
+	insteadOf = https://github.com/seibert-data/
 [filter "lfs"]
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
