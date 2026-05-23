@@ -86,8 +86,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# export DOCKER_HOST=unix:///Users/bborbe/.rd/docker.sock
 	# zstyle ':completion:*:*:-command-:*:*' ignored-patterns 'kuberlr'
 
-	# Docker Desktop
-	export DOCKER_HOST=unix:///Users/bborbe/.docker/run/docker.sock
+	# Docker socket — prefer OrbStack if running, else Docker Desktop
+	if [ -S "$HOME/.orbstack/run/docker.sock" ]; then
+		export DOCKER_HOST=unix://$HOME/.orbstack/run/docker.sock
+	elif [ -S "$HOME/.docker/run/docker.sock" ]; then
+		export DOCKER_HOST=unix://$HOME/.docker/run/docker.sock
+	fi
 	# export DOCKER_HOST=tcp://127.0.0.1:1111
 
 	# VS Code
