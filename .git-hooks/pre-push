@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+#
+# Pre-push hook: refuse to push to master/main from a non-matching local branch.
+#
+# Same-name pushes (master → master, main → main) are allowed — that covers
+# release commits and fast-forward pulls.
+#
+# Cross-name pushes to master/main are blocked — that catches the most common
+# accident: a feature worktree created with `git worktree add -b NAME origin/master`
+# leaves the new branch's upstream pointing at origin/master, so the first push
+# (or any tool's auto-push, e.g. dark-factory daemon) lands the commits on
+# origin/master, bypassing the PR gate.
+#
+# Emergency override: `git push --no-verify` (bypasses ALL client hooks).
+#
+# This hook is installed globally via `core.hooksPath = ~/.git-hooks` in
+# .gitconfig. The bborbe/dotfiles install script symlinks ~/.git-hooks → repo's
+# .git-hooks directory.
+
+set -euo pipefail
+
+while read -r local_ref _local_sha remote_ref _remote_sha; do
+	case "$remote_ref" in
+		refs/heads/master|refs/heads/main)
+			if [ "$local_ref" = "$remote_ref" ]; then
+				# Same-name push (e.g. master → master). Allow.
+				continue
+			fi
+			echo "" >&2
+			echo "✋ Refusing to push $local_ref → $remote_ref" >&2
+			echo "" >&2
+			echo "   This is usually the upstream-mismatch trap: a feature branch" >&2
+			echo "   whose upstream points at origin/master instead of its own remote." >&2
+			echo "" >&2
+			echo "   Fix the upstream:" >&2
+			echo "     git push -u origin ${local_ref#refs/heads/}" >&2
+			echo "" >&2
+			echo "   Emergency override: git push --no-verify" >&2
+			echo "" >&2
+			exit 1
+			;;
+	esac
+done
+
+exit 0

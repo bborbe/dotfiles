@@ -11,6 +11,7 @@
 	autocrlf = input
 	editor = vi
 	pager = more
+	hooksPath = ~/.git-hooks
 [push]
 	default = simple
 	followTags = true
