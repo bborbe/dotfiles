@@ -5,6 +5,7 @@ files=(
 	.crontab
 	.emacs
 	.fonts.conf
+	.git-hooks
 	.gitconfig
 	.gitignore_global
 	.hgignore_global
