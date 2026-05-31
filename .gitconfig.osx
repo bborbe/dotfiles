@@ -12,6 +12,7 @@
 	autocrlf = input
 	editor = vim
 	pager = more -R
+	hooksPath = ~/.git-hooks
 [push]
 	default = current
 	followTags = true
