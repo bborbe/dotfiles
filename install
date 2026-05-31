@@ -36,7 +36,7 @@ INSTALLDIR=$HOME
 
 dotfiles=$(dirname $(readlink -f "$0"))
 
-for i in ${files[@]}
+for i in "${files[@]}"
 do
 	echo "install ${i}"
 	if [ -e $INSTALLDIR/$i ]; then
