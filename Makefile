@@ -1,4 +1,4 @@
-SHELL_FILES = install update .git-hooks/pre-push .zsh/git-helpers.zsh
+SHELL_FILES = install update .git-hooks/pre-commit .git-hooks/pre-push .zsh/git-helpers.zsh
 
 test: check
 

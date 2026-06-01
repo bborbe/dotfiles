@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: refuse to commit changes that introduce git merge conflict
+# markers (`<<<<<<<`, `=======`, `>>>>>>> `). Catches the case where a merge
+# resolution was forgotten and the marker-annotated file got staged.
+#
+# Why global: conflict markers in a committed file are bad in any repo. Caught
+# real fallout in the OpenClaw vault on 2026-06-01 — 24 files committed with
+# unresolved markers by git-rest's MarkerResolver; vault scanner silently
+# skipped them; dedup degraded.
+#
+# Detection: `git diff --cached -G '^<<<<<<< '` lists files whose staged hunks
+# add or modify a line matching the marker pattern. Trailing space prevents
+# false positives on legitimate `<<<<<<<` strings inside code (rare; the
+# trailing space is part of git's actual marker output).
+#
+# Emergency override: `git commit --no-verify` (bypasses ALL client hooks).
+#
+# Installed globally via `core.hooksPath = ~/.git-hooks` in .gitconfig.osx.
+
+set -euo pipefail
+
+flagged=$(git diff --cached --diff-filter=AM -G '^<<<<<<< ' --name-only || true)
+
+if [ -n "$flagged" ]; then
+	echo "" >&2
+	echo "✋ Refusing commit: staged changes contain git merge conflict markers" >&2
+	echo "" >&2
+	echo "   Files:" >&2
+	printf '%s\n' "$flagged" | sed 's/^/     /' >&2
+	echo "" >&2
+	echo "   Resolve the conflict (pick a side, remove the markers) before committing." >&2
+	echo "   Emergency override: git commit --no-verify" >&2
+	echo "" >&2
+	exit 1
+fi
+
+exit 0
