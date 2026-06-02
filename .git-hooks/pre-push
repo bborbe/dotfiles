@@ -19,6 +19,15 @@
 
 set -euo pipefail
 
+# Skip when pushing to a local-file remote (test sandboxes, throwaway bare repos
+# under /tmp, file:// URLs). These cannot affect any shared state, so the
+# upstream-mismatch guard would be a false positive — and silently breaks test
+# fixtures that do `git push HEAD:refs/heads/master` against a local bare repo.
+remote_url="${2:-}"
+case "$remote_url" in
+	/*|file://*) exit 0 ;;
+esac
+
 while read -r local_ref _local_sha remote_ref _remote_sha; do
 	case "$remote_ref" in
 		refs/heads/master|refs/heads/main)
