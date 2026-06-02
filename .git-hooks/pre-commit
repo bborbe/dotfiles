@@ -20,6 +20,15 @@
 
 set -euo pipefail
 
+# Skip when committing inside a temp/sandbox repo (test fixtures, throwaway
+# workdirs under /tmp or macOS /var/folders). MarkerResolver tests legitimately
+# commit files with markers as part of the contract being verified — those
+# sandboxes cannot affect any shared state, so the guard would be a false positive.
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+case "$repo_root" in
+	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
+esac
+
 flagged=$(git diff --cached --diff-filter=AM -G '^<<<<<<< ' --name-only || true)
 
 if [ -n "$flagged" ]; then

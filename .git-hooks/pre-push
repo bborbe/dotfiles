@@ -19,6 +19,18 @@
 
 set -euo pipefail
 
+# Skip when pushing to a sandbox local-file remote (test fixtures, throwaway bare
+# repos under /tmp or macOS /var/folders, file:// URLs). These cannot affect any
+# shared state, so the upstream-mismatch guard would be a false positive — and
+# silently breaks test fixtures that do `git push HEAD:refs/heads/master` against
+# a local bare repo. Scope is matched to the pre-commit hook's sandbox set so
+# legitimate local bare repos (e.g. /home/user/git/foo.git, /opt/git/repos/...)
+# are STILL gated by the upstream-mismatch check.
+remote_url="${2:-}"
+case "$remote_url" in
+	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*|file:///tmp/*|file:///var/folders/*|file:///private/tmp/*|file:///private/var/folders/*) exit 0 ;;
+esac
+
 while read -r local_ref _local_sha remote_ref _remote_sha; do
 	case "$remote_ref" in
 		refs/heads/master|refs/heads/main)
