@@ -119,8 +119,10 @@ export COREOS_ENDPOINT=172.16.30.10
 export FLEETCTL_ENDPOINT=http://$COREOS_ENDPOINT:4001
 export ETCDCTL_ENDPOINT=http://$COREOS_ENDPOINT:2379
 
-# User Bins
-export PATH=$HOME/Documents/workspaces/scripts:$PATH
+# User Bins — scripts repo (claude-obsidian-*.sh launchers etc.)
+# Override SCRIPTS_DIR per machine (e.g. workspace flat layout: $HOME/scripts).
+SCRIPTS_DIR=${SCRIPTS_DIR:-$HOME/Documents/workspaces/scripts}
+export PATH=$SCRIPTS_DIR:$PATH
 
 # Http-Proxy
 #export http_proxy="http://127.0.0.1:8118"
@@ -201,3 +203,6 @@ esac
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Hermes Agent — ensure ~/.local/bin is on PATH
+export PATH="$HOME/.local/bin:$PATH"
