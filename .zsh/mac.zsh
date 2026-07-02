@@ -38,8 +38,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Mono
 	export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/Current/bin
 
-	# Update Crontab
-	cat ~/.crontab | crontab -
+
 
 	# Dotnet
 	export PATH=$PATH:/usr/local/share/dotnet
