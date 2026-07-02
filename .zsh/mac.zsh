@@ -70,6 +70,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Emacs
 	export PATH=$PATH:/Applications/Emacs.app/Contents/MacOS/bin
 
+	# WezTerm
+	export PATH=$PATH:/Applications/WezTerm.app/Contents/MacOS
+
 	# PhantomJS
 	export PATH=$PATH:$PATH:/opt/phantomjs-2.1.1-macosx/bin
 	export PHANTOMJS_PATH=$PATH:"/opt/phantomjs-2.1.1-macosx/bin/phantomjs"
