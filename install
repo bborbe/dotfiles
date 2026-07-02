@@ -16,6 +16,7 @@ files=(
 	.vimrc
 	.zsh
 	.zshrc
+	.config/wezterm
 	.ssh/config
 	.ssh/known_hosts_fixed
 )
