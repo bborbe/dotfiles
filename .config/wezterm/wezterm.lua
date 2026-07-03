@@ -114,6 +114,15 @@ config.keys = {
   { key = "phys:RightArrow", mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(1) },
 }
 
+-- Disable default SUPER+Left-drag → StartWindowDrag (Cmd+click moving the window)
+config.mouse_bindings = {
+  {
+    event = { Drag = { streak = 1, button = "Left" } },
+    mods = "SUPER",
+    action = wezterm.action.Nop,
+  },
+}
+
 if is_windows then
   config.win32_system_backdrop = "Acrylic"
   config.window_background_opacity = 1.0
