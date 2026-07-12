@@ -24,7 +24,7 @@
 	template = ~/.stCommitMsg
 	gpgsign = true
 [gpg]
-	program = /opt/local/bin/gpg
+	program = /opt/homebrew/bin/gpg
 [difftool]
 	prompt = false
 [merge]

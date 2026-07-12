@@ -51,7 +51,7 @@ plugins=(git)
 
 export PAGER="less -RFX"
 export BLOCKSIZE=K
-export PATH=/opt/local/libexec/gnubin:/opt/local/sbin:/opt/local/bin:/opt/local/apache2/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 export LC_ALL=en_US.UTF-8
 
 export HISTSIZE=1000000000

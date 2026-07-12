@@ -33,7 +33,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	if [ -f '/opt/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/google-cloud-sdk/completion.zsh.inc'; fi
 
 	# Use python 3.12 for gcloud sdk
-	export CLOUDSDK_PYTHON=/opt/local/bin/python3.12
+	export CLOUDSDK_PYTHON=/opt/homebrew/bin/python3.12
 
 	# Mono
 	export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/Current/bin
@@ -52,14 +52,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Chromedriver
 	export PATH=$PATH:/opt/chromedriver/bin
 
-	# Postgresql
-	export PATH=$PATH:/opt/local/lib/postgresql10/bin
+	# Postgresql (Homebrew postgresql@15, keg-only)
+	export PATH=$PATH:/opt/homebrew/opt/postgresql@15/bin
 
 	# Vagrant
 	export PATH=$PATH:/Applications/Vagrant/bin
 
-	# Mysql
-	export PATH=$PATH:/opt/local/lib/mysql57/bin
+	# (MySQL removed 2026-07-12 — no longer needed; was MacPorts mysql57)
 
 	# Java
 	if type "/usr/libexec/java_home" > /dev/null; then
