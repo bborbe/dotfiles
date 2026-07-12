@@ -3,7 +3,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
   ssh-add -q --apple-load-keychain
 
-	# Homebrew (added after MacPorts in main PATH)
+	# Homebrew
 	if [ -f '/opt/homebrew/bin/brew' ]; then
 		eval "$(/opt/homebrew/bin/brew shellenv)"
 	fi
