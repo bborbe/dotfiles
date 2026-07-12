@@ -19,8 +19,10 @@ local work_scheme     = "Gruvbox Material (Gogh)"
 
 config.color_scheme = personal_scheme
 
--- Determine scheme for a window: workspace name takes priority, then
--- fall back to sorting all windows by ID (lowest = personal).
+-- Determine scheme for a window: workspace name takes priority, then a
+-- sticky "first free color" assignment stored in wezterm.GLOBAL, which
+-- persists across config reloads so a window keeps its color (no swap,
+-- no recompute → no reload cascade).
 local function scheme_for_window(window)
   local ws = window:active_workspace()
   if ws:find("^work") then
@@ -29,26 +31,32 @@ local function scheme_for_window(window)
     return personal_scheme
   end
 
-  -- Fallback: sort all windows by ID. The one with the lowest ID is
-  -- personal, second-lowest is work, etc. This covers:
-  --   - config reload (workspace names lost from old windows)
-  --   - Cmd+N when the parent window also has no workspace set
-  local windows = {}
-  for _, w in ipairs(wezterm.mux.all_windows()) do
-    table.insert(windows, w:window_id())
+  local assigned = wezterm.GLOBAL.assigned or {}
+  local my_id = tostring(window:window_id())
+  -- Already assigned (survives reload) → keep it stable.
+  if assigned[my_id] then
+    return assigned[my_id]
   end
-  table.sort(windows)
 
-  local wid = window:window_id()
-  -- Window with the lowest ID → personal; next → work
-  local rank = nil
-  for i, id in ipairs(windows) do
-    if id == wid then rank = i; break end
+  -- Which schemes are held by other currently-open windows. Close a window →
+  -- its color frees → next new window reclaims it.
+  local used = {}
+  for _, w in ipairs(wezterm.mux.all_windows()) do
+    local id = tostring(w:window_id())
+    if id ~= my_id and assigned[id] then
+      used[assigned[id]] = true
+    end
   end
-  if rank == 2 then
-    return work_scheme
+  local chosen = personal_scheme
+  for _, s in ipairs({ personal_scheme, work_scheme }) do
+    if not used[s] then
+      chosen = s
+      break
+    end
   end
-  return personal_scheme
+  assigned[my_id] = chosen
+  wezterm.GLOBAL.assigned = assigned -- reassign whole table so it persists
+  return chosen
 end
 
 -- Startup: spawn both windows
@@ -112,6 +120,8 @@ config.keys = {
   },
   { key = "phys:LeftArrow",  mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(-1) },
   { key = "phys:RightArrow", mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(1) },
+  -- Disable default ALT+Enter → ToggleFullScreen
+  { key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
 }
 
 -- Disable default SUPER+Left-drag → StartWindowDrag (Cmd+click moving the window)
