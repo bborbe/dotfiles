@@ -115,6 +115,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   export BITBUCKET_TOKEN=$(security find-generic-password -a "pr-reviewer" -s "BITBUCKET_TOKEN" -w 2>/dev/null)
   export BITBUCKET_ADMIN_TOKEN=$(security find-generic-password -a "bitbucket-admin-token" -s "BITBUCKET_ADMIN_TOKEN" -w 2>/dev/null)
   export BITBUCKET_READ_TOKEN=$(security find-generic-password -a "bitbucket-read-token" -s "BITBUCKET_READ_TOKEN" -w 2>/dev/null)
+  export BAMBOO_TOKEN=$(security find-generic-password -a "bamboo-token" -s "BAMBOO_TOKEN" -w 2>/dev/null)
 
   # vault-cli completion
   if type "vault-cli" > /dev/null; then
