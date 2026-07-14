@@ -20,8 +20,8 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 --   "Tokyo Night Storm", "Tokyo Night", "nord", "rose-pine-moon",
 --   "Solarized Light (Gogh)", "Gruvbox Light"
 
-local personal_scheme = "Solarized Dark (Gogh)"
-local work_scheme     = "Gruvbox Material (Gogh)"
+local personal_scheme = "Gruvbox Material (Gogh)"
+local work_scheme     = "Solarized Dark (Gogh)"
 
 config.color_scheme = personal_scheme
 
