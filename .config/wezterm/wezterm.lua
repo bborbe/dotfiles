@@ -2,6 +2,12 @@ local wezterm = require("wezterm")
 
 local config = wezterm.config_builder()
 
+-- Session persistence across restarts (pane layout + cwd + scrollback).
+-- Manual save/restore only (SUPER+S / SUPER+R) — startup auto-restore is
+-- intentionally NOT wired, since gui-startup below force-spawns two windows.
+local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
+resurrect.state_manager.periodic_save({ interval_seconds = 300, save_workspaces = true })
+
 local is_windows = os.getenv("OS") and os.getenv("OS"):lower():find("windows")
 local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 
@@ -19,44 +25,30 @@ local work_scheme     = "Gruvbox Material (Gogh)"
 
 config.color_scheme = personal_scheme
 
--- Determine scheme for a window: workspace name takes priority, then a
--- sticky "first free color" assignment stored in wezterm.GLOBAL, which
--- persists across config reloads so a window keeps its color (no swap,
--- no recompute → no reload cascade).
+-- Determine scheme for a window by OPEN ORDER, not workspace. window_id is
+-- monotonic (first window has the lowest id), so sorting all live windows and
+-- indexing into the scheme list gives a deterministic, race-free color:
+-- window 1 → personal, window 2 → work, cycling for extras. This is immune to
+-- the two failure modes of the old workspace-based logic:
+--   1. window:active_workspace() returns the mux-GLOBAL active workspace (not
+--      the window's own), so on any config reload every window resolved to the
+--      focused workspace's scheme → all windows collapsed to one color.
+--   2. Cmd+n windows join the active workspace, so a second window in
+--      "personal" got the personal scheme instead of a distinct one.
+local schemes = { personal_scheme, work_scheme }
 local function scheme_for_window(window)
-  local ws = window:active_workspace()
-  if ws:find("^work") then
-    return work_scheme
-  elseif ws:find("^personal") then
-    return personal_scheme
-  end
-
-  local assigned = wezterm.GLOBAL.assigned or {}
-  local my_id = tostring(window:window_id())
-  -- Already assigned (survives reload) → keep it stable.
-  if assigned[my_id] then
-    return assigned[my_id]
-  end
-
-  -- Which schemes are held by other currently-open windows. Close a window →
-  -- its color frees → next new window reclaims it.
-  local used = {}
+  local ids = {}
   for _, w in ipairs(wezterm.mux.all_windows()) do
-    local id = tostring(w:window_id())
-    if id ~= my_id and assigned[id] then
-      used[assigned[id]] = true
+    table.insert(ids, w:window_id())
+  end
+  table.sort(ids)
+  local my_id = window:window_id()
+  for i, id in ipairs(ids) do
+    if id == my_id then
+      return schemes[((i - 1) % #schemes) + 1]
     end
   end
-  local chosen = personal_scheme
-  for _, s in ipairs({ personal_scheme, work_scheme }) do
-    if not used[s] then
-      chosen = s
-      break
-    end
-  end
-  assigned[my_id] = chosen
-  wezterm.GLOBAL.assigned = assigned -- reassign whole table so it persists
-  return chosen
+  return personal_scheme
 end
 
 -- Startup: spawn both windows
@@ -117,6 +109,38 @@ config.keys = {
       wezterm.action.ClearScrollback("ScrollbackAndViewport"),
       wezterm.action.SendKey({ key = "L", mods = "CTRL" }),
     }),
+  },
+  -- resurrect: save current workspace state
+  {
+    key = "s",
+    mods = "SUPER",
+    action = wezterm.action_callback(function(_, _)
+      resurrect.state_manager.save_state(resurrect.workspace_state.get_workspace_state())
+    end),
+  },
+  -- resurrect: fuzzy-pick a saved state and restore it
+  {
+    key = "r",
+    mods = "SUPER",
+    action = wezterm.action_callback(function(win, pane)
+      resurrect.fuzzy_loader.fuzzy_load(win, pane, function(id)
+        local kind = string.match(id, "^([^/]+)")
+        id = string.match(id, "([^/]+)$")
+        id = string.match(id, "(.+)%..+$")
+        local opts = {
+          relative = true,
+          restore_text = true,
+          on_pane_restore = resurrect.tab_state.default_on_pane_restore,
+        }
+        if kind == "workspace" then
+          resurrect.workspace_state.restore_workspace(resurrect.state_manager.load_state(id, "workspace"), opts)
+        elseif kind == "window" then
+          resurrect.window_state.restore_window(pane:window(), resurrect.state_manager.load_state(id, "window"), opts)
+        elseif kind == "tab" then
+          resurrect.tab_state.restore_tab(pane:tab(), resurrect.state_manager.load_state(id, "tab"), opts)
+        end
+      end)
+    end),
   },
   { key = "phys:LeftArrow",  mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(-1) },
   { key = "phys:RightArrow", mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(1) },
