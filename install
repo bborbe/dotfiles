@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 files=(
+	.bash_profile
 	.bashrc
 	.crontab
 	.emacs
