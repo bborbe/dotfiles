@@ -142,14 +142,108 @@ config.keys = {
       end)
     end),
   },
+  -- Park / restore between the two windows. No hiding anywhere: the "other"
+  -- window is the background — it just sits behind the current one, fully
+  -- visible, so a parked tab needs no minimize/off-screen trick and no
+  -- archive workspace. Both directions use the CLI, which is the only thing
+  -- that moves a pane into an EXISTING window (the Lua enum has no such
+  -- action; pane:move_to_new_window only makes a NEW window).
+  -- Note: moves the ACTIVE pane — on a split tab only that pane parks.
+  {
+    key = "a",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action_callback(function(win, pane)
+      local current_id = win:window_id()
+      local target = nil
+      for _, mw in ipairs(wezterm.mux.all_windows()) do
+        if mw:window_id() ~= current_id then
+          target = mw
+          break
+        end
+      end
+      if not target then
+        return
+      end
+      wezterm.run_child_process {
+        wezterm.executable_dir .. "/wezterm", "cli", "move-pane-to-new-tab",
+        "--pane-id", tostring(pane:pane_id()),
+        "--window-id", tostring(target:window_id()),
+      }
+    end),
+  },
+  -- Restore: fuzzy-pick a tab from the OTHER window(s) and pull it back into
+  -- the CURRENT window as a new tab. A parked (single-pane) tab moves whole.
+  -- The CLI binary is addressed via wezterm.executable_dir — a bare "wezterm"
+  -- doesn't resolve when the app launched from Finder (no PATH entry).
+  {
+    key = "w",
+    mods = "SUPER|SHIFT",
+    action = wezterm.action_callback(function(win, pane)
+      local current_id = win:window_id()
+      local choices = {}
+      for _, mw in ipairs(wezterm.mux.all_windows()) do
+        if mw:window_id() ~= current_id then
+          for _, t in ipairs(mw:tabs()) do
+            for _, p in ipairs(t:panes()) do
+              local title = t:get_title()
+              if title == "" then
+                title = p:get_title()
+              end
+              table.insert(choices, { id = tostring(p:pane_id()), label = title })
+            end
+          end
+        end
+      end
+      if #choices == 0 then
+        win:toast_notification("wezterm", "no tabs in the other window", nil, 3000)
+        return
+      end
+      win:perform_action(wezterm.action.InputSelector {
+        title = "Pull tab into this window",
+        choices = choices,
+        fuzzy = true,
+        action = wezterm.action_callback(function(w, _, id)
+          if not id then
+            return
+          end
+          local args = {
+            wezterm.executable_dir .. "/wezterm", "cli", "move-pane-to-new-tab",
+            "--pane-id", id,
+            "--window-id", tostring(w:window_id()),
+          }
+          local ok, stderr = pcall(wezterm.run_child_process, args)
+          if not ok or (stderr and #stderr > 0) then
+            w:toast_notification("wezterm", "restore failed: " .. tostring(stderr), nil, 4000)
+          end
+        end),
+      }, pane)
+    end),
+  },
   { key = "phys:LeftArrow",  mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(-1) },
   { key = "phys:RightArrow", mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(1) },
   -- Disable default ALT+Enter → ToggleFullScreen
   { key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
 }
 
--- Disable default SUPER+Left-drag → StartWindowDrag (Cmd+click moving the window)
+-- Cmd+click opens links. WezTerm ships no SUPER mouse binding of its own (the
+-- old SUPER+drag → StartWindowDrag default moved to SHIFT|CTRL upstream), so
+-- without these Cmd+click is a silent no-op. The Down→Nop half suppresses the
+-- selection that would otherwise swallow the click.
+-- Note: inside apps that enable mouse reporting (Claude Code, vim, tmux) the
+-- TUI consumes clicks — hold SHIFT to bypass reporting and hit the link.
 config.mouse_bindings = {
+  {
+    event = { Up = { streak = 1, button = "Left" } },
+    mods = "SUPER",
+    action = wezterm.action.OpenLinkAtMouseCursor,
+  },
+  {
+    event = { Down = { streak = 1, button = "Left" } },
+    mods = "SUPER",
+    action = wezterm.action.Nop,
+  },
+  -- Keep the default SUPER+Left-drag → StartWindowDrag disabled (Cmd+drag
+  -- otherwise moves the window).
   {
     event = { Drag = { streak = 1, button = "Left" } },
     mods = "SUPER",
