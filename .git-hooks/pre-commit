@@ -9,10 +9,18 @@
 # unresolved markers by git-rest's MarkerResolver; vault scanner silently
 # skipped them; dedup degraded.
 #
-# Detection: `git diff --cached -G '^<<<<<<< '` lists files whose staged hunks
-# add or modify a line matching the marker pattern. Trailing space prevents
-# false positives on legitimate `<<<<<<<` strings inside code (rare; the
-# trailing space is part of git's actual marker output).
+# Detection: for each added/modified staged path, inspect the STAGED BLOB and
+# flag it when its content still contains a marker line. Trailing space in the
+# pattern prevents false positives on legitimate `<<<<<<<` strings in code.
+#
+# Why blob-based and not `git diff --cached -G '^<<<<<<< '` (the original):
+# git's `-G` matches a pattern appearing in ADDED **or REMOVED** lines, so a
+# commit that *deletes* marker lines — i.e. the conflict repair this hook is
+# asking for — tripped the guard and was refused. The hook blocked the only
+# fix that satisfies it, and the sole escape was `--no-verify`, which drops
+# every other check too. Testing the resulting blob asks the question we
+# actually care about: "does the thing I am about to commit contain markers?"
+# (Fixed 2026-09-07 after it blocked an OpenClaw vault conflict repair.)
 #
 # Emergency override: `git commit --no-verify` (bypasses ALL client hooks).
 #
@@ -29,7 +37,15 @@ case "$repo_root" in
 	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
 esac
 
-flagged=$(git diff --cached --diff-filter=AM -G '^<<<<<<< ' --name-only || true)
+# -z keeps paths with spaces/quotes intact (vault task filenames routinely
+# contain both); git would otherwise C-quote them and the loop would misread.
+flagged=""
+while IFS= read -r -d '' path; do
+	if git show ":$path" 2>/dev/null | grep -qE '^(<<<<<<< |>>>>>>> )'; then
+		flagged="${flagged}${path}"$'\n'
+	fi
+done < <(git diff --cached --diff-filter=AM --name-only -z)
+flagged="${flagged%$'\n'}"
 
 if [ -n "$flagged" ]; then
 	echo "" >&2
