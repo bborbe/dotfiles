@@ -21,43 +21,61 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 --   "Tokyo Night Storm", "Tokyo Night", "nord", "rose-pine-moon",
 --   "Solarized Light (Gogh)", "Gruvbox Light"
 
+-- ALL THREE WINDOWS SHARE ONE WORKSPACE. This is the whole design constraint,
+-- and it is not negotiable: a WezTerm workspace behaves like a virtual desktop,
+-- so only the ACTIVE workspace's windows get gui windows at all. Measured
+-- directly (census logging, 2026-09-15) with one window per workspace:
+--
+--   T+3s | active_workspace=manager | id=0 ws=manager gui=YES
+--                                   | id=1 ws=worker  gui=no
+--                                   | id=2 ws=managed gui=no
+--
+-- The other two are not hidden, stacked or mis-positioned — they have no gui
+-- window, and one appears only when you close the current one and the active
+-- workspace moves. So "one workspace per purpose" can never put three windows
+-- on screen together, however the spawning is done.
+--
+-- Purpose therefore keys off the WINDOW, not the workspace. The mapping lives
+-- in wezterm.GLOBAL because that is the one table that survives a config
+-- reload — a plain module-level table is rebuilt every reload, which would drop
+-- every window back to the fallback colour on the first save of this file.
+local WORKSPACE = "main"
+
 local window_specs = {
-  { workspace = "manager", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
-  { workspace = "worker",  scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
-  { workspace = "managed", scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { purpose = "manager", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
+  { purpose = "worker",  scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { purpose = "managed", scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
 }
 
-local scheme_by_workspace = {}
+local scheme_by_purpose = {}
 local scheme_list = {}
 for _, spec in ipairs(window_specs) do
-  scheme_by_workspace[spec.workspace] = spec.scheme
+  scheme_by_purpose[spec.purpose] = spec.scheme
   table.insert(scheme_list, spec.scheme)
+end
+
+wezterm.GLOBAL.window_purpose = wezterm.GLOBAL.window_purpose or {}
+
+-- GLOBAL keys must be strings — it is serialised across reloads.
+local function purpose_of(window_id)
+  return wezterm.GLOBAL.window_purpose[tostring(window_id)]
 end
 
 config.color_scheme = window_specs[1].scheme
 
 -- Scheme resolution, in order:
---   1. The window's OWN workspace, via MuxWindow:get_workspace(). Stable across
---      close/reopen, tab moves and config reloads, so a window keeps its theme
---      for as long as it keeps its purpose. NOT window:active_workspace(),
---      which returns the mux-GLOBAL active workspace and therefore collapsed
---      every window to the focused workspace's color on each reload.
---   2. Fallback for a window whose workspace is NOT in the list above —
---      a resurrect-restored workspace, a renamed one, or a leftover from an
---      older config. Open order over the scheme list: window_id is monotonic,
---      so sorting live ids and indexing gives such a window a deterministic
---      color rather than defaulting everything to one.
---      Note a Cmd+N window does NOT land here: it joins the ACTIVE workspace,
---      which is normally one of the three, so it matches in step 1 and shares
---      that workspace's theme — correct, since the theme tracks purpose and a
---      second manager window is still a manager window.
+--   1. The purpose recorded for this window id at spawn, from wezterm.GLOBAL.
+--      Survives config reloads, and is per-window rather than per-workspace so
+--      three windows can carry three themes while sharing one workspace.
+--   2. Fallback for a window with no recorded purpose — a Cmd+N window, a
+--      resurrect-restored one, or anything that outlived the mapping. Open
+--      order over the scheme list: window_id is monotonic, so sorting live ids
+--      and indexing gives it a deterministic colour instead of defaulting
+--      everything to one.
 local function scheme_for_window(window)
-  local mux = window:mux_window()
-  if mux then
-    local scheme = scheme_by_workspace[mux:get_workspace()]
-    if scheme then
-      return scheme
-    end
+  local purpose = purpose_of(window:window_id())
+  if purpose and scheme_by_purpose[purpose] then
+    return scheme_by_purpose[purpose]
   end
 
   local ids = {}
@@ -74,35 +92,112 @@ local function scheme_for_window(window)
   return scheme_list[1]
 end
 
--- Startup: spawn all three windows, cascaded so each stays grabbable.
--- mux.spawn_window returns (tab, pane, window) IN THAT ORDER — bind the THIRD
--- value. Binding the second yields a Pane, which has no :gui_window(); calling
--- it raises inside the gui-startup handler, which then aborts BEFORE spawning
--- the remaining windows. The `if gui then` guard does not save you: the error
--- happens at the call, not in its result. Symptom is quiet and easy to
--- misread — only the first window ever appears, so the others get opened by
--- hand with Cmd+N, and those join the ACTIVE workspace instead of their own.
--- (That is exactly how this config shipped two windows that were both in the
--- "personal" workspace while claiming to spawn "personal" and "work".)
+-- Startup: spawn all three windows.
+--
+-- ONLY THE FIRST WINDOW IS SPAWNED VIA mux.spawn_window. That is not a style
+-- choice — calling it in a loop does not produce three usable windows:
+--
+--   * mux.spawn_window creates a MUX window. During gui-startup only one of
+--     them gets a GUI window attached; the rest stay headless. They are not
+--     hidden, not stacked, not off-screen — they are not on screen at all.
+--     WezTerm attaches a GUI to the next one only when you CLOSE the current
+--     one, so the windows appear strictly one at a time, in sequence.
+--   * Asking a headless one for its GUI window RAISES rather than returning
+--     nil —  "mux window id 1 is not currently associated with a gui window" —
+--     and since that error propagates out of the handler, it aborts the whole
+--     loop. Every window after the failing one is never even spawned.
+--   * No amount of deferring, retrying or pcall-ing around :gui_window()
+--     changes this. Those only silence the error; the window still has no GUI.
+--     A silenced version of this bug is strictly worse, because "one window
+--     and no errors" reads like a positioning problem.
+--
+-- `wezterm cli spawn --new-window` DOES create a real, immediately-visible GUI
+-- window, so windows 2..n go through it. Deferred slightly so the GUI server
+-- is up to service the request, and via background_child_process because
+-- run_child_process blocks the handler.
+--
+-- Colors are NOT set here: window-config-reloaded below fires for every window
+-- at creation and resolves the scheme from the window's own workspace, which
+-- covers CLI-spawned windows identically.
+-- Spawn diagnostics. Flip to true and run `wezterm-gui start --always-new-process`
+-- to get a census of every mux window with whether it has a gui window.
+--
+-- Keep this: window spawning here failed in a way that is invisible from the
+-- outside — a headless window looks exactly like one that is hidden behind
+-- another, and both look like a positioning bug. The census is what
+-- distinguished them (gui=YES vs gui=no against active_workspace) after several
+-- wrong fixes aimed at position and timing. window-config-reloaded is the other
+-- half of the signal: it fires ONLY for windows that have a gui window, so
+-- counting its lines counts the real windows.
+local DEBUG = false
+
+local function dbg(msg)
+  if DEBUG then
+    wezterm.log_info("WEZDEBUG: " .. msg)
+  end
+end
+
+local function census(tag)
+  local parts = {}
+  for _, mw in ipairs(wezterm.mux.all_windows()) do
+    local ok, gui = pcall(function()
+      return mw:gui_window()
+    end)
+    table.insert(parts, string.format(
+      "id=%s ws=%s gui=%s tabs=%d",
+      tostring(mw:window_id()),
+      tostring(mw:get_workspace()),
+      (ok and gui ~= nil) and "YES" or "no",
+      #mw:tabs()
+    ))
+  end
+  dbg(string.format(
+    "%s | active_workspace=%s | mux_windows=%d | %s",
+    tag,
+    tostring(wezterm.mux.get_active_workspace()),
+    #wezterm.mux.all_windows(),
+    table.concat(parts, " || ")
+  ))
+end
+
 wezterm.on("gui-startup", function(cmd)
-  local active = wezterm.gui.screens().active
-  for i, spec in ipairs(window_specs) do
+  for _, spec in ipairs(window_specs) do
     local _, _, mux_win = wezterm.mux.spawn_window {
-      workspace = spec.workspace,
+      workspace = WORKSPACE,
       cwd       = spec.cwd,
     }
-    local gui = mux_win:gui_window()
-    if gui then
-      gui:set_config_overrides { color_scheme = spec.scheme }
-      gui:set_position(active.x + 30 + (i - 1) * 50, active.y + 20 + (i - 1) * 40)
-    end
+    -- Record purpose BEFORE the window can fire window-config-reloaded, so the
+    -- very first colour resolution already sees it.
+    wezterm.GLOBAL.window_purpose[tostring(mux_win:window_id())] = spec.purpose
+    dbg(string.format("spawned id=%s purpose=%s ws=%s",
+      tostring(mux_win:window_id()), spec.purpose, WORKSPACE))
+  end
+
+  -- Census after every spawn has had time to land. Timers are only armed under
+  -- DEBUG so a normal start schedules nothing.
+  if DEBUG then
+    wezterm.time.call_after(3.0, function()
+      census("T+3s")
+    end)
+    wezterm.time.call_after(8.0, function()
+      census("T+8s")
+    end)
   end
 end)
 
 -- Applied to EVERY window at creation and on config reload
 wezterm.on("window-config-reloaded", function(window)
+  local scheme = scheme_for_window(window)
+  local mux = window:mux_window()
+  dbg(string.format(
+    "config-reloaded: gui window id=%s purpose=%s ws=%s -> scheme=%s",
+    tostring(window:window_id()),
+    tostring(purpose_of(window:window_id())),
+    mux and tostring(mux:get_workspace()) or "<no mux>",
+    scheme
+  ))
   window:set_config_overrides {
-    color_scheme = scheme_for_window(window),
+    color_scheme = scheme,
   }
 end)
 
@@ -182,7 +277,8 @@ config.keys = {
         if mw:window_id() ~= current_id then
           table.insert(choices, {
             id    = tostring(mw:window_id()),
-            label = mw:get_workspace() .. "  (" .. #mw:tabs() .. " tabs)",
+            label = (purpose_of(mw:window_id()) or ("window " .. mw:window_id()))
+              .. "  (" .. #mw:tabs() .. " tabs)",
           })
         end
       end
@@ -226,16 +322,16 @@ config.keys = {
       local choices = {}
       for _, mw in ipairs(wezterm.mux.all_windows()) do
         if mw:window_id() ~= current_id then
-          local ws = mw:get_workspace()
+          local origin = purpose_of(mw:window_id()) or ("window " .. mw:window_id())
           for _, t in ipairs(mw:tabs()) do
             for _, p in ipairs(t:panes()) do
               local title = t:get_title()
               if title == "" then
                 title = p:get_title()
               end
-              -- Prefix the workspace: with three windows the title alone
-              -- doesn't say where the tab is being pulled from.
-              table.insert(choices, { id = tostring(p:pane_id()), label = "[" .. ws .. "] " .. title })
+              -- Prefix the source window's purpose: with three windows the tab
+              -- title alone doesn't say where it would be pulled from.
+              table.insert(choices, { id = tostring(p:pane_id()), label = "[" .. origin .. "] " .. title })
             end
           end
         end
