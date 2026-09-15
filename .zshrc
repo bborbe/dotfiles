@@ -202,3 +202,15 @@ esac
 
 # Hermes Agent — ensure ~/.local/bin is on PATH
 export PATH="$HOME/.local/bin:$PATH"
+
+# bun completions
+[ -s "/Users/bborbe/.bun/_bun" ] && source "/Users/bborbe/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Go-installed CLIs (vault-cli, …) — must precede /opt/homebrew/bin, which
+# /etc/paths.d/homebrew adds via path_helper before this file runs. Without
+# this, a stale Homebrew cask shadows the freshly installed binary.
+export PATH="/Users/bborbe/Documents/workspaces/go/bin:$PATH"
