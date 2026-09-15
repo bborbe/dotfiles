@@ -4,7 +4,7 @@ local config = wezterm.config_builder()
 
 -- Session persistence across restarts (pane layout + cwd + scrollback).
 -- Manual save/restore only (SUPER+S / SUPER+R) — startup auto-restore is
--- intentionally NOT wired, since gui-startup below force-spawns two windows.
+-- intentionally NOT wired, since gui-startup below force-spawns three windows.
 local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
 resurrect.state_manager.periodic_save({ interval_seconds = 300, save_workspaces = true })
 
@@ -21,7 +21,7 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 --   "Tokyo Night Storm", "Tokyo Night", "nord", "rose-pine-moon",
 --   "Solarized Light (Gogh)", "Gruvbox Light"
 
-local windows = {
+local window_specs = {
   { workspace = "manager", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
   { workspace = "worker",  scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
   { workspace = "managed", scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
@@ -29,12 +29,12 @@ local windows = {
 
 local scheme_by_workspace = {}
 local scheme_list = {}
-for _, spec in ipairs(windows) do
+for _, spec in ipairs(window_specs) do
   scheme_by_workspace[spec.workspace] = spec.scheme
   table.insert(scheme_list, spec.scheme)
 end
 
-config.color_scheme = windows[1].scheme
+config.color_scheme = window_specs[1].scheme
 
 -- Scheme resolution, in order:
 --   1. The window's OWN workspace, via MuxWindow:get_workspace(). Stable across
@@ -42,10 +42,15 @@ config.color_scheme = windows[1].scheme
 --      for as long as it keeps its purpose. NOT window:active_workspace(),
 --      which returns the mux-GLOBAL active workspace and therefore collapsed
 --      every window to the focused workspace's color on each reload.
---   2. Fallback for a window in an unlisted workspace (Cmd+N joins whatever
---      workspace is active): open order over the scheme list — window_id is
---      monotonic, so sorting live ids and indexing gives extra windows a
---      deterministic, distinct color instead of all sharing one.
+--   2. Fallback for a window whose workspace is NOT in the list above —
+--      a resurrect-restored workspace, a renamed one, or a leftover from an
+--      older config. Open order over the scheme list: window_id is monotonic,
+--      so sorting live ids and indexing gives such a window a deterministic
+--      color rather than defaulting everything to one.
+--      Note a Cmd+N window does NOT land here: it joins the ACTIVE workspace,
+--      which is normally one of the three, so it matches in step 1 and shares
+--      that workspace's theme — correct, since the theme tracks purpose and a
+--      second manager window is still a manager window.
 local function scheme_for_window(window)
   local mux = window:mux_window()
   if mux then
@@ -69,11 +74,20 @@ local function scheme_for_window(window)
   return scheme_list[1]
 end
 
--- Startup: spawn all three windows, cascaded so each stays grabbable
+-- Startup: spawn all three windows, cascaded so each stays grabbable.
+-- mux.spawn_window returns (tab, pane, window) IN THAT ORDER — bind the THIRD
+-- value. Binding the second yields a Pane, which has no :gui_window(); calling
+-- it raises inside the gui-startup handler, which then aborts BEFORE spawning
+-- the remaining windows. The `if gui then` guard does not save you: the error
+-- happens at the call, not in its result. Symptom is quiet and easy to
+-- misread — only the first window ever appears, so the others get opened by
+-- hand with Cmd+N, and those join the ACTIVE workspace instead of their own.
+-- (That is exactly how this config shipped two windows that were both in the
+-- "personal" workspace while claiming to spawn "personal" and "work".)
 wezterm.on("gui-startup", function(cmd)
   local active = wezterm.gui.screens().active
-  for i, spec in ipairs(windows) do
-    local _, mux_win, _ = wezterm.mux.spawn_window {
+  for i, spec in ipairs(window_specs) do
+    local _, _, mux_win = wezterm.mux.spawn_window {
       workspace = spec.workspace,
       cwd       = spec.cwd,
     }
@@ -176,7 +190,6 @@ config.keys = {
         win:toast_notification("wezterm", "no other window to park into", nil, 3000)
         return
       end
-      -- Single other window: no point prompting, just send it.
       local function park_to(window_id)
         wezterm.run_child_process {
           wezterm.executable_dir .. "/wezterm", "cli", "move-pane-to-new-tab",
@@ -184,6 +197,7 @@ config.keys = {
           "--window-id", window_id,
         }
       end
+      -- Exactly one other window: the pick is forced, so skip the prompt.
       if #choices == 1 then
         park_to(choices[1].id)
         return
