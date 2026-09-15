@@ -56,7 +56,16 @@ end
 
 wezterm.GLOBAL.window_purpose = wezterm.GLOBAL.window_purpose or {}
 
--- GLOBAL keys must be strings — it is serialised across reloads.
+-- Two constraints on the table above:
+--   * Keys must be STRINGS — GLOBAL holds json-like data, so window ids get
+--     tostring()'d on both write and read.
+--   * The in-place nested write below (GLOBAL.window_purpose[id] = purpose)
+--     requires wezterm >= 20230320-124340-559cb7b0. Before that, indexing
+--     GLOBAL returned a COPY and the assignment silently did nothing, needing
+--     a read/modify/write-back. Silently: no error, the value just never
+--     appears — which here would look like every window losing its theme on
+--     the first config save. Fine on this build (20260716+); if this config is
+--     ever run somewhere older, that is the first thing to check.
 local function purpose_of(window_id)
   return wezterm.GLOBAL.window_purpose[tostring(window_id)]
 end
