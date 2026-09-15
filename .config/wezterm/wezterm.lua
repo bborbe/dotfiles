@@ -4,39 +4,62 @@ local config = wezterm.config_builder()
 
 -- Session persistence across restarts (pane layout + cwd + scrollback).
 -- Manual save/restore only (SUPER+S / SUPER+R) — startup auto-restore is
--- intentionally NOT wired, since gui-startup below force-spawns two windows.
+-- intentionally NOT wired, since gui-startup below force-spawns three windows.
 local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
 resurrect.state_manager.periodic_save({ interval_seconds = 300, save_workspaces = true })
 
 local is_windows = os.getenv("OS") and os.getenv("OS"):lower():find("windows")
 local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 
--- Two-window setup:
---   Window 1 (personal) → Solarized Dark (Gogh) — current theme
---   Window 2 (work)     → OneDark (base16)        — distinct dark theme
+-- Three-window setup — one workspace + one theme per purpose:
+--   manager → Gruvbox Material (Gogh)  — the Claude manager sessions
+--   worker  → Solarized Dark (Gogh)    — worker sessions I drive by hand
+--   managed → Tokyo Night Storm        — work the managers drive
 --
 -- Theme list for reference:
 --   "Catppuccin Mocha", "Dracula (Official)", "Gruvbox Material (Gogh)",
 --   "Tokyo Night Storm", "Tokyo Night", "nord", "rose-pine-moon",
 --   "Solarized Light (Gogh)", "Gruvbox Light"
 
-local personal_scheme = "Gruvbox Material (Gogh)"
-local work_scheme     = "Solarized Dark (Gogh)"
+local window_specs = {
+  { workspace = "manager", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
+  { workspace = "worker",  scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { workspace = "managed", scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
+}
 
-config.color_scheme = personal_scheme
+local scheme_by_workspace = {}
+local scheme_list = {}
+for _, spec in ipairs(window_specs) do
+  scheme_by_workspace[spec.workspace] = spec.scheme
+  table.insert(scheme_list, spec.scheme)
+end
 
--- Determine scheme for a window by OPEN ORDER, not workspace. window_id is
--- monotonic (first window has the lowest id), so sorting all live windows and
--- indexing into the scheme list gives a deterministic, race-free color:
--- window 1 → personal, window 2 → work, cycling for extras. This is immune to
--- the two failure modes of the old workspace-based logic:
---   1. window:active_workspace() returns the mux-GLOBAL active workspace (not
---      the window's own), so on any config reload every window resolved to the
---      focused workspace's scheme → all windows collapsed to one color.
---   2. Cmd+n windows join the active workspace, so a second window in
---      "personal" got the personal scheme instead of a distinct one.
-local schemes = { personal_scheme, work_scheme }
+config.color_scheme = window_specs[1].scheme
+
+-- Scheme resolution, in order:
+--   1. The window's OWN workspace, via MuxWindow:get_workspace(). Stable across
+--      close/reopen, tab moves and config reloads, so a window keeps its theme
+--      for as long as it keeps its purpose. NOT window:active_workspace(),
+--      which returns the mux-GLOBAL active workspace and therefore collapsed
+--      every window to the focused workspace's color on each reload.
+--   2. Fallback for a window whose workspace is NOT in the list above —
+--      a resurrect-restored workspace, a renamed one, or a leftover from an
+--      older config. Open order over the scheme list: window_id is monotonic,
+--      so sorting live ids and indexing gives such a window a deterministic
+--      color rather than defaulting everything to one.
+--      Note a Cmd+N window does NOT land here: it joins the ACTIVE workspace,
+--      which is normally one of the three, so it matches in step 1 and shares
+--      that workspace's theme — correct, since the theme tracks purpose and a
+--      second manager window is still a manager window.
 local function scheme_for_window(window)
+  local mux = window:mux_window()
+  if mux then
+    local scheme = scheme_by_workspace[mux:get_workspace()]
+    if scheme then
+      return scheme
+    end
+  end
+
   local ids = {}
   for _, w in ipairs(wezterm.mux.all_windows()) do
     table.insert(ids, w:window_id())
@@ -45,36 +68,34 @@ local function scheme_for_window(window)
   local my_id = window:window_id()
   for i, id in ipairs(ids) do
     if id == my_id then
-      return schemes[((i - 1) % #schemes) + 1]
+      return scheme_list[((i - 1) % #scheme_list) + 1]
     end
   end
-  return personal_scheme
+  return scheme_list[1]
 end
 
--- Startup: spawn both windows
+-- Startup: spawn all three windows, cascaded so each stays grabbable.
+-- mux.spawn_window returns (tab, pane, window) IN THAT ORDER — bind the THIRD
+-- value. Binding the second yields a Pane, which has no :gui_window(); calling
+-- it raises inside the gui-startup handler, which then aborts BEFORE spawning
+-- the remaining windows. The `if gui then` guard does not save you: the error
+-- happens at the call, not in its result. Symptom is quiet and easy to
+-- misread — only the first window ever appears, so the others get opened by
+-- hand with Cmd+N, and those join the ACTIVE workspace instead of their own.
+-- (That is exactly how this config shipped two windows that were both in the
+-- "personal" workspace while claiming to spawn "personal" and "work".)
 wezterm.on("gui-startup", function(cmd)
   local active = wezterm.gui.screens().active
-
-  -- Window 1 — personal
-  local _, pers_win, _ = wezterm.mux.spawn_window {
-    workspace = "personal",
-    cwd       = wezterm.home_dir,
-  }
-  local pers_gui = pers_win:gui_window()
-  if pers_gui then
-    pers_gui:set_config_overrides { color_scheme = personal_scheme }
-    pers_gui:set_position(active.x + 30, active.y + 20)
-  end
-
-  -- Window 2 — work
-  local _, work_win, _ = wezterm.mux.spawn_window {
-    workspace = "work",
-    cwd       = wezterm.home_dir .. "/Documents/workspaces",
-  }
-  local work_gui = work_win:gui_window()
-  if work_gui then
-    work_gui:set_config_overrides { color_scheme = work_scheme }
-    work_gui:set_position(active.x + 80, active.y + 60)
+  for i, spec in ipairs(window_specs) do
+    local _, _, mux_win = wezterm.mux.spawn_window {
+      workspace = spec.workspace,
+      cwd       = spec.cwd,
+    }
+    local gui = mux_win:gui_window()
+    if gui then
+      gui:set_config_overrides { color_scheme = spec.scheme }
+      gui:set_position(active.x + 30 + (i - 1) * 50, active.y + 20 + (i - 1) * 40)
+    end
   end
 end)
 
@@ -142,33 +163,55 @@ config.keys = {
       end)
     end),
   },
-  -- Park / restore between the two windows. No hiding anywhere: the "other"
-  -- window is the background — it just sits behind the current one, fully
-  -- visible, so a parked tab needs no minimize/off-screen trick and no
-  -- archive workspace. Both directions use the CLI, which is the only thing
-  -- that moves a pane into an EXISTING window (the Lua enum has no such
-  -- action; pane:move_to_new_window only makes a NEW window).
+  -- Park / restore across the windows. No hiding anywhere: the other windows
+  -- are the background — they sit behind the current one, fully visible, so a
+  -- parked tab needs no minimize/off-screen trick and no archive workspace.
+  -- Both directions use the CLI, which is the only thing that moves a pane
+  -- into an EXISTING window (the Lua enum has no such action;
+  -- pane:move_to_new_window only makes a NEW window).
   -- Note: moves the ACTIVE pane — on a split tab only that pane parks.
+  -- With three purpose-windows the target is ambiguous, so this picks by
+  -- workspace name rather than grabbing the first non-current window.
   {
     key = "a",
     mods = "SUPER|SHIFT",
     action = wezterm.action_callback(function(win, pane)
       local current_id = win:window_id()
-      local target = nil
+      local choices = {}
       for _, mw in ipairs(wezterm.mux.all_windows()) do
         if mw:window_id() ~= current_id then
-          target = mw
-          break
+          table.insert(choices, {
+            id    = tostring(mw:window_id()),
+            label = mw:get_workspace() .. "  (" .. #mw:tabs() .. " tabs)",
+          })
         end
       end
-      if not target then
+      if #choices == 0 then
+        win:toast_notification("wezterm", "no other window to park into", nil, 3000)
         return
       end
-      wezterm.run_child_process {
-        wezterm.executable_dir .. "/wezterm", "cli", "move-pane-to-new-tab",
-        "--pane-id", tostring(pane:pane_id()),
-        "--window-id", tostring(target:window_id()),
-      }
+      local function park_to(window_id)
+        wezterm.run_child_process {
+          wezterm.executable_dir .. "/wezterm", "cli", "move-pane-to-new-tab",
+          "--pane-id", tostring(pane:pane_id()),
+          "--window-id", window_id,
+        }
+      end
+      -- Exactly one other window: the pick is forced, so skip the prompt.
+      if #choices == 1 then
+        park_to(choices[1].id)
+        return
+      end
+      win:perform_action(wezterm.action.InputSelector {
+        title = "Park this tab into which window?",
+        choices = choices,
+        fuzzy = true,
+        action = wezterm.action_callback(function(_, _, id)
+          if id then
+            park_to(id)
+          end
+        end),
+      }, pane)
     end),
   },
   -- Restore: fuzzy-pick a tab from the OTHER window(s) and pull it back into
@@ -183,13 +226,16 @@ config.keys = {
       local choices = {}
       for _, mw in ipairs(wezterm.mux.all_windows()) do
         if mw:window_id() ~= current_id then
+          local ws = mw:get_workspace()
           for _, t in ipairs(mw:tabs()) do
             for _, p in ipairs(t:panes()) do
               local title = t:get_title()
               if title == "" then
                 title = p:get_title()
               end
-              table.insert(choices, { id = tostring(p:pane_id()), label = title })
+              -- Prefix the workspace: with three windows the title alone
+              -- doesn't say where the tab is being pulled from.
+              table.insert(choices, { id = tostring(p:pane_id()), label = "[" .. ws .. "] " .. title })
             end
           end
         end
