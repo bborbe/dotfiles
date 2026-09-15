@@ -101,33 +101,28 @@ local function scheme_for_window(window)
   return scheme_list[1]
 end
 
--- Startup: spawn all three windows.
+-- Startup: spawn all three windows into the ONE shared workspace.
 --
--- ONLY THE FIRST WINDOW IS SPAWNED VIA mux.spawn_window. That is not a style
--- choice — calling it in a loop does not produce three usable windows:
+-- The `workspace = WORKSPACE` on every spawn is the load-bearing part. Give
+-- each window its own workspace and only one of them is ever on screen, for
+-- the reason documented at WORKSPACE above: a non-active workspace's window is
+-- a mux window with NO gui window.
 --
---   * mux.spawn_window creates a MUX window. During gui-startup only one of
---     them gets a GUI window attached; the rest stay headless. They are not
---     hidden, not stacked, not off-screen — they are not on screen at all.
---     WezTerm attaches a GUI to the next one only when you CLOSE the current
---     one, so the windows appear strictly one at a time, in sequence.
---   * Asking a headless one for its GUI window RAISES rather than returning
---     nil —  "mux window id 1 is not currently associated with a gui window" —
---     and since that error propagates out of the handler, it aborts the whole
---     loop. Every window after the failing one is never even spawned.
---   * No amount of deferring, retrying or pcall-ing around :gui_window()
---     changes this. Those only silence the error; the window still has no GUI.
---     A silenced version of this bug is strictly worse, because "one window
---     and no errors" reads like a positioning problem.
+-- Two traps that follow from that, both of which cost real debugging time:
 --
--- `wezterm cli spawn --new-window` DOES create a real, immediately-visible GUI
--- window, so windows 2..n go through it. Deferred slightly so the GUI server
--- is up to service the request, and via background_child_process because
--- run_child_process blocks the handler.
+--   * Asking a headless mux window for :gui_window() RAISES rather than
+--     returning nil — "mux window id 1 is not currently associated with a gui
+--     window". An `if gui then` guard cannot catch it, and the error
+--     propagates out of this handler, aborting it, so every window after the
+--     failing one is never spawned at all.
+--   * Deferring, retrying or pcall-ing around :gui_window() does NOT fix that.
+--     It only silences the error while the window still has no GUI — and a
+--     silenced version is strictly worse, because "one window, no errors"
+--     reads like a positioning bug and sends you looking in the wrong place.
 --
--- Colors are NOT set here: window-config-reloaded below fires for every window
--- at creation and resolves the scheme from the window's own workspace, which
--- covers CLI-spawned windows identically.
+-- So do not call :gui_window() here at all. Colours are not set here either:
+-- window-config-reloaded below fires for every window that has a GUI and
+-- resolves the scheme from the recorded purpose.
 -- Spawn diagnostics. Flip to true and run `wezterm-gui start --always-new-process`
 -- to get a census of every mux window with whether it has a gui window.
 --
