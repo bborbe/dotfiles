@@ -4,24 +4,30 @@ local config = wezterm.config_builder()
 
 -- Session persistence across restarts (pane layout + cwd + scrollback).
 -- Manual save/restore only (SUPER+S / SUPER+R) — startup auto-restore is
--- intentionally NOT wired, since gui-startup below force-spawns three windows.
+-- intentionally NOT wired, since gui-startup below force-spawns four windows.
 local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
 resurrect.state_manager.periodic_save({ interval_seconds = 300, save_workspaces = true })
 
 local is_windows = os.getenv("OS") and os.getenv("OS"):lower():find("windows")
 local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 
--- Three-window setup — one workspace + one theme per purpose:
---   manager → Gruvbox Material (Gogh)  — the Claude manager sessions
---   worker  → Solarized Dark (Gogh)    — worker sessions I drive by hand
---   managed → Tokyo Night Storm        — work the managers drive
+-- Four-window setup — one theme + one title per purpose:
+--   Managers → Gruvbox Material (Gogh)  — the Claude manager sessions
+--   Direct   → Solarized Dark (Gogh)    — work I drive directly, by hand
+--   Agents   → Tokyo Night Storm        — the worker agents the managers drive
+--   Hold     → nord                     — parked: blocked or not wanted now
+--
+-- Names deliberately start with four different letters (M/D/A/H). An earlier
+-- pass used manager/worker/managed, where "manager" and "managed" were
+-- indistinguishable at a glance in a window switcher — which is the entire
+-- point of naming them. SUPER|SHIFT+1..4 pins the current window to a purpose.
 --
 -- Theme list for reference:
 --   "Catppuccin Mocha", "Dracula (Official)", "Gruvbox Material (Gogh)",
 --   "Tokyo Night Storm", "Tokyo Night", "nord", "rose-pine-moon",
 --   "Solarized Light (Gogh)", "Gruvbox Light"
 
--- ALL THREE WINDOWS SHARE ONE WORKSPACE. This is the whole design constraint,
+-- EVERY WINDOW SHARES ONE WORKSPACE. This is the whole design constraint,
 -- and it is not negotiable: a WezTerm workspace behaves like a virtual desktop,
 -- so only the ACTIVE workspace's windows get gui windows at all. Measured
 -- directly (census logging, 2026-09-15) with one window per workspace:
@@ -30,9 +36,9 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 --                                   | id=1 ws=worker  gui=no
 --                                   | id=2 ws=managed gui=no
 --
--- The other two are not hidden, stacked or mis-positioned — they have no gui
+-- The others are not hidden, stacked or mis-positioned — they have no gui
 -- window, and one appears only when you close the current one and the active
--- workspace moves. So "one workspace per purpose" can never put three windows
+-- workspace moves. So "one workspace per purpose" can never put several windows
 -- on screen together, however the spawning is done.
 --
 -- Purpose therefore keys off the WINDOW, not the workspace. The mapping lives
@@ -42,9 +48,14 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 local WORKSPACE = "main"
 
 local window_specs = {
-  { purpose = "manager", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
-  { purpose = "worker",  scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
-  { purpose = "managed", scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { purpose = "Managers", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
+  { purpose = "Direct",   scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { purpose = "Agents",   scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  -- Parking lot for tabs that are blocked or not wanted right now, and the
+  -- natural destination for the SUPER|SHIFT+A park binding. nord is cold and
+  -- desaturated — distinct from the warm brown, teal and purple above without
+  -- being a light theme glaring among three dark ones.
+  { purpose = "Hold",     scheme = "nord",                    cwd = wezterm.home_dir },
 }
 
 local scheme_by_purpose = {}
@@ -75,7 +86,7 @@ config.color_scheme = window_specs[1].scheme
 -- Scheme resolution, in order:
 --   1. The purpose recorded for this window id at spawn, from wezterm.GLOBAL.
 --      Survives config reloads, and is per-window rather than per-workspace so
---      three windows can carry three themes while sharing one workspace.
+--      several windows can carry distinct themes while sharing one workspace.
 --   2. Fallback for a window with no recorded purpose — a Cmd+N window, a
 --      resurrect-restored one, or anything that outlived the mapping. Open
 --      order over the scheme list: window_id is monotonic, so sorting live ids
@@ -101,7 +112,7 @@ local function scheme_for_window(window)
   return scheme_list[1]
 end
 
--- Startup: spawn all three windows into the ONE shared workspace.
+-- Startup: spawn every purpose window into the ONE shared workspace.
 --
 -- The `workspace = WORKSPACE` on every spawn is the load-bearing part. Give
 -- each window its own workspace and only one of them is ever on screen, for
@@ -135,9 +146,24 @@ end
 -- counting its lines counts the real windows.
 local DEBUG = false
 
+-- Debug output goes to a FILE, not wezterm.log_info.
+--
+-- log_info writes to the GUI process's stderr, which for an app launched from
+-- Finder is unreadable — and that is the normal case. Several rounds of this
+-- config were debugged blind for exactly that reason: a handler that never ran
+-- and a handler that raised looked identical from outside. A file can be
+-- tailed from anywhere, including by tooling that is not attached to the GUI.
+local DEBUG_LOG = "/tmp/wezterm-debug.log"
+
 local function dbg(msg)
-  if DEBUG then
-    wezterm.log_info("WEZDEBUG: " .. msg)
+  if not DEBUG then
+    return
+  end
+  wezterm.log_info("WEZDEBUG: " .. msg)
+  local f = io.open(DEBUG_LOG, "a")
+  if f then
+    f:write(os.date("%H:%M:%S") .. " " .. msg .. "\n")
+    f:close()
   end
 end
 
@@ -164,6 +190,252 @@ local function census(tag)
   ))
 end
 
+-- How often the window set is checked. Low enough that an accidentally closed
+-- window is back before you reach for it, high enough to be free at idle.
+local RECONCILE_INTERVAL_SECONDS = 5
+
+-- The window title is the purpose, re-asserted on every title computation.
+--
+-- `wezterm cli set-window-title` is NOT usable for this: it sets the title
+-- once, and any pane that emits a title escape immediately overwrites it. Every
+-- window here runs Claude, which sets the terminal title continuously, so the
+-- CLI title survived only on an idle window — measured directly: of three
+-- windows titled via the CLI, only the idle one still read its given name
+-- seconds later.
+--
+-- format-window-title is the durable mechanism because it OWNS the computation
+-- rather than racing it. It receives TabInformation, whose `window_id` (since
+-- 20220807-113146-c2fee766) is what makes a per-window lookup possible at all.
+wezterm.on("format-window-title", function(tab, pane, tabs, panes, config)
+  local purpose = purpose_of(tab.window_id)
+  if purpose then
+    return purpose
+  end
+  -- No recorded purpose: reproduce wezterm's default title.
+  return tab.active_pane.title
+end)
+
+local function claim(mux_win, purpose)
+  local id = mux_win:window_id()
+  wezterm.GLOBAL.window_purpose[tostring(id)] = purpose
+  -- Re-resolve the colour directly: window-config-reloaded does not fire just
+  -- because a window's purpose changed, so an adopted window would otherwise
+  -- keep its old fallback scheme until the next config save.
+  local ok, gui = pcall(function()
+    return mux_win:gui_window()
+  end)
+  if ok and gui then
+    gui:set_config_overrides { color_scheme = scheme_by_purpose[purpose] }
+  end
+  dbg(string.format("claimed id=%s purpose=%s", tostring(id), purpose))
+end
+
+-- Re-apply every window's scheme from its recorded purpose.
+--
+-- Needed after a pane is moved between windows: the colour is a per-WINDOW
+-- config override, and moving a pane does not re-run that override, so the
+-- moved tab keeps rendering in the scheme of the window it came from. Nothing
+-- re-asserts it on its own — not window-config-reloaded, which does not fire
+-- for a move — so the wrong colour persists until the next config save.
+-- Apply a window's scheme. With force=true, CLEAR the override first and set it
+-- back a moment later.
+--
+-- The clear is the whole point. set_config_overrides with the value a window
+-- already holds is a no-op — wezterm sees no change and does not repaint — so
+-- simply re-asserting the correct scheme does nothing for a pane that moved
+-- into the window and is still drawn in its previous window's palette. That is
+-- why a config reload "fixed" it and a re-assert did not: the reload forces the
+-- repaint that an unchanged value never triggers.
+local function apply_scheme(mw, scheme, force)
+  local ok, gui = pcall(function()
+    return mw:gui_window()
+  end)
+  if not ok or not gui then
+    return "skip(no gui)"
+  end
+  if force then
+    gui:set_config_overrides {}
+    wezterm.time.call_after(0.1, function()
+      local ok2, g2 = pcall(function()
+        return mw:gui_window()
+      end)
+      if ok2 and g2 then
+        g2:set_config_overrides { color_scheme = scheme }
+      end
+    end)
+    return scheme .. "(forced)"
+  end
+  gui:set_config_overrides { color_scheme = scheme }
+  return scheme
+end
+
+local function reassert_schemes(force)
+  local report = {}
+  for _, mw in ipairs(wezterm.mux.all_windows()) do
+    local purpose = purpose_of(mw:window_id())
+    local scheme = purpose and scheme_by_purpose[purpose]
+    local applied = "skip(no purpose)"
+    if scheme then
+      applied = apply_scheme(mw, scheme, force)
+    end
+    table.insert(report, string.format("%s=%s", tostring(mw:window_id()), applied))
+  end
+  dbg("reassert" .. (force and " FORCED" or "") .. " " .. table.concat(report, " "))
+end
+
+-- Detect a pane changing windows, by any route — the park/restore bindings, a
+-- drag, or a hand-run `wezterm cli move-pane-to-new-tab`. Returns true when the
+-- pane→window mapping differs from the previous tick, which is the signal that
+-- some window needs a forced repaint rather than a no-op re-assert.
+local function panes_moved()
+  local current = {}
+  for _, mw in ipairs(wezterm.mux.all_windows()) do
+    local wid = tostring(mw:window_id())
+    for _, tab in ipairs(mw:tabs()) do
+      for _, p in ipairs(tab:panes()) do
+        current[tostring(p:pane_id())] = wid
+      end
+    end
+  end
+
+  local previous = wezterm.GLOBAL.pane_window or {}
+  local moved = false
+  for pane_id, wid in pairs(current) do
+    if previous[pane_id] and previous[pane_id] ~= wid then
+      moved = true
+      dbg(string.format("pane %s moved window %s -> %s", pane_id, previous[pane_id], wid))
+    end
+  end
+
+  wezterm.GLOBAL.pane_window = current
+  return moved
+end
+
+-- Moves go through the CLI and complete asynchronously, so re-assert shortly
+-- after rather than immediately — at the moment the CLI call returns, the pane
+-- has not landed in its new window yet.
+local function reassert_schemes_after_move()
+  -- force=true: the destination window's override is already correct, so only
+  -- a cleared-then-restored override repaints the pane that just arrived.
+  wezterm.time.call_after(0.3, function()
+    reassert_schemes(true)
+  end)
+end
+
+-- Keep the window set whole: exactly one window per purpose, correctly titled
+-- and coloured. Runs on a timer, so a window closed by accident comes back
+-- within a few seconds, and a config reload repairs whatever drifted.
+--
+-- Adoption (step 3) is what makes this self-healing rather than merely
+-- additive: windows that exist but have no recorded purpose — Cmd+N windows,
+-- resurrect-restored ones, or any window whose GLOBAL entry was lost — are
+-- assigned the free purposes in window-id order instead of being ignored and
+-- duplicated.
+local function reconcile()
+  local windows = wezterm.mux.all_windows()
+
+  -- Never resurrect from zero. Zero windows means wezterm is quitting;
+  -- spawning here would fight the shutdown and make it unquittable.
+  if #windows == 0 then
+    return
+  end
+
+  local map = wezterm.GLOBAL.window_purpose
+
+  -- 1. Drop entries for windows that no longer exist, so their purpose frees up.
+  local alive = {}
+  for _, mw in ipairs(windows) do
+    alive[tostring(mw:window_id())] = true
+  end
+  for id in pairs(map) do
+    if not alive[id] then
+      map[id] = nil
+    end
+  end
+
+  -- 2. Release duplicate claims — two windows must never hold one purpose.
+  local taken = {}
+  for _, mw in ipairs(windows) do
+    local key = tostring(mw:window_id())
+    local purpose = map[key]
+    if purpose then
+      if taken[purpose] then
+        map[key] = nil
+      else
+        taken[purpose] = true
+      end
+    end
+  end
+
+  -- 3. Collect purposeless windows, oldest first, as adoption candidates.
+  local orphans = {}
+  for _, mw in ipairs(windows) do
+    if not map[tostring(mw:window_id())] then
+      table.insert(orphans, mw)
+    end
+  end
+  table.sort(orphans, function(a, b)
+    return a:window_id() < b:window_id()
+  end)
+
+  -- 4. Fill every unheld purpose: adopt an orphan if there is one, else spawn.
+  for _, spec in ipairs(window_specs) do
+    if not taken[spec.purpose] then
+      local mux_win = table.remove(orphans, 1)
+      if not mux_win then
+        -- Spawn into the ACTIVE workspace, never the hardcoded startup one.
+        -- A window spawned into a non-active workspace gets no gui window, so
+        -- respawning into WORKSPACE while the session sits in another one
+        -- silently produces an invisible replacement — the window is "restored"
+        -- and you still cannot see it. Observed live: a respawn landed in
+        -- "main" while the real windows were in "personal", and the user saw
+        -- two windows, not three.
+        local workspace = wezterm.mux.get_active_workspace() or WORKSPACE
+        local _, _, spawned = wezterm.mux.spawn_window {
+          workspace = workspace,
+          cwd       = spec.cwd,
+        }
+        mux_win = spawned
+        dbg("respawned purpose=" .. spec.purpose .. " into ws=" .. tostring(workspace))
+      end
+      claim(mux_win, spec.purpose)
+      taken[spec.purpose] = true
+    end
+  end
+
+  -- 5. Re-assert colours, forcing a repaint only when a pane actually changed
+  -- windows. Forcing on every tick would clear and restore the override once a
+  -- second-ish on every window, which is visible flicker for no reason; never
+  -- forcing leaves a moved pane drawn in its old window's palette.
+  reassert_schemes(panes_moved())
+end
+
+-- Heartbeat: update-status fires roughly once a second per window, so it gives
+-- a recurring tick without self-scheduling anything. Throttled via GLOBAL so
+-- the work happens at most once per RECONCILE_INTERVAL_SECONDS no matter how
+-- many windows are ticking.
+--
+-- A self-rearming wezterm.time.call_after chain was tried first and never ran.
+-- The config is re-evaluated constantly — every reload, and again as each
+-- window resolves its config — and the guard meant to keep exactly one chain
+-- alive (compare a captured generation against a counter bumped per
+-- evaluation) instead retired every chain: the counter had always moved on by
+-- the time a 5s timer fired. It failed silently, which is the worst property a
+-- guard can have. An event-driven tick has no such failure mode.
+wezterm.on("update-status", function(window, pane)
+  local now = os.time()
+  local last = wezterm.GLOBAL.last_reconcile or 0
+  if now - last < RECONCILE_INTERVAL_SECONDS then
+    return
+  end
+  wezterm.GLOBAL.last_reconcile = now
+  -- Report failures explicitly. An error raised in an event handler is logged
+  -- and swallowed by wezterm, so without this a broken reconcile is
+  -- indistinguishable from one that never fires.
+  local ok, err = pcall(reconcile)
+  dbg("tick reconcile ok=" .. tostring(ok) .. (ok and "" or (" err=" .. tostring(err))))
+end)
+
 wezterm.on("gui-startup", function(cmd)
   for _, spec in ipairs(window_specs) do
     local _, _, mux_win = wezterm.mux.spawn_window {
@@ -171,7 +443,9 @@ wezterm.on("gui-startup", function(cmd)
       cwd       = spec.cwd,
     }
     -- Record purpose BEFORE the window can fire window-config-reloaded, so the
-    -- very first colour resolution already sees it.
+    -- very first colour resolution already sees it. reconcile() cannot do this
+    -- job: at gui-startup there are zero windows, which is exactly the case its
+    -- quit-guard refuses to act on.
     wezterm.GLOBAL.window_purpose[tostring(mux_win:window_id())] = spec.purpose
     dbg(string.format("spawned id=%s purpose=%s ws=%s",
       tostring(mux_win:window_id()), spec.purpose, WORKSPACE))
@@ -296,6 +570,7 @@ config.keys = {
           "--pane-id", tostring(pane:pane_id()),
           "--window-id", window_id,
         }
+        reassert_schemes_after_move()
       end
       -- Exactly one other window: the pick is forced, so skip the prompt.
       if #choices == 1 then
@@ -333,7 +608,7 @@ config.keys = {
               if title == "" then
                 title = p:get_title()
               end
-              -- Prefix the source window's purpose: with three windows the tab
+              -- Prefix the source window's purpose: with several windows the tab
               -- title alone doesn't say where it would be pulled from.
               table.insert(choices, { id = tostring(p:pane_id()), label = "[" .. origin .. "] " .. title })
             end
@@ -360,7 +635,9 @@ config.keys = {
           local ok, stderr = pcall(wezterm.run_child_process, args)
           if not ok or (stderr and #stderr > 0) then
             w:toast_notification("wezterm", "restore failed: " .. tostring(stderr), nil, 4000)
+            return
           end
+          reassert_schemes_after_move()
         end),
       }, pane)
     end),
@@ -370,6 +647,36 @@ config.keys = {
   -- Disable default ALT+Enter → ToggleFullScreen
   { key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
 }
+
+-- SUPER|SHIFT + 1..N pins the CURRENT window to a purpose: Managers, Direct,
+-- Agents, Hold. Colour and title follow immediately.
+--
+-- This is the manual override for the automatic assignment. Adoption has to
+-- guess — it hands out free purposes in window-id order — and that guess is
+-- wrong whenever the on-screen arrangement does not match id order, which is
+-- routine after a window is closed and another respawned. Without a way to
+-- correct it by hand, the only remedy was to reload the config and hope the
+-- ordering came out right, which is not a remedy.
+for i, spec in ipairs(window_specs) do
+  table.insert(config.keys, {
+    key = tostring(i),
+    mods = "SUPER|SHIFT",
+    action = wezterm.action_callback(function(win, _)
+      local mux = win:mux_window()
+      if not mux then
+        return
+      end
+      -- Free the purpose from whoever holds it, so two windows never share one.
+      for id, purpose in pairs(wezterm.GLOBAL.window_purpose) do
+        if purpose == spec.purpose then
+          wezterm.GLOBAL.window_purpose[id] = nil
+        end
+      end
+      claim(mux, spec.purpose)
+      win:toast_notification("wezterm", "this window is now " .. spec.purpose, nil, 2000)
+    end),
+  })
+end
 
 -- Cmd+click opens links. WezTerm ships no SUPER mouse binding of its own (the
 -- old SUPER+drag → StartWindowDrag default moved to SHIFT|CTRL upstream), so
