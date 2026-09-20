@@ -47,15 +47,28 @@ local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 -- every window back to the fallback colour on the first save of this file.
 local WORKSPACE = "main"
 
+-- `chip` is the session ACCENT (/color) a session spawned into this window
+-- should carry — a different thing from `scheme`, which is the window's own
+-- palette. Both exist because a role is signalled twice: the window repaints in
+-- its purpose colour, and the session's name chip carries the role so it is
+-- readable from inside the session and from the transcript.
+--
+--   Managers  orange  managers      (fleet / topic / worker managers)
+--   Agents    pink    agents        (the fleet default for workers)
+--   Direct    cyan    human-only    (the operator's own work — NOT a worker)
+--   Hold      nil     —             (a parking lot, not a role; never spawned into)
+--
+-- Keep this table the single source of truth: the role map exported below is
+-- generated FROM it, so a role added here is routed without a second edit.
 local window_specs = {
-  { purpose = "Managers", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir },
-  { purpose = "Direct",   scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces" },
-  { purpose = "Agents",   scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces" },
+  { purpose = "Managers", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir,                              chip = "orange" },
+  { purpose = "Direct",   scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces",  chip = "cyan"   },
+  { purpose = "Agents",   scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces",  chip = "pink"   },
   -- Parking lot for tabs that are blocked or not wanted right now, and the
   -- natural destination for the SUPER|SHIFT+A park binding. nord is cold and
   -- desaturated — distinct from the warm brown, teal and purple above without
   -- being a light theme glaring among three dark ones.
-  { purpose = "Hold",     scheme = "nord",                    cwd = wezterm.home_dir },
+  { purpose = "Hold",     scheme = "nord",                    cwd = wezterm.home_dir,                              chip = nil      },
 }
 
 local scheme_by_purpose = {}
@@ -63,6 +76,73 @@ local scheme_list = {}
 for _, spec in ipairs(window_specs) do
   scheme_by_purpose[spec.purpose] = spec.scheme
   table.insert(scheme_list, spec.scheme)
+end
+
+-- Where the role map is published for consumers OUTSIDE this process.
+--
+-- The mapping lives in wezterm.GLOBAL.window_purpose, which is in-process state:
+-- a spawn path (/open, claude-supervisor) cannot read it, and `wezterm cli list`
+-- exposes window_id / window_title / workspace but no purpose field. So the
+-- resolve step writes the map to a file on every reconcile tick and consumers
+-- read THAT. Window ids are runtime-assigned and move on a WezTerm restart, which
+-- is exactly why this is republished continuously rather than resolved once.
+local ROLE_MAP_PATH = wezterm.home_dir .. "/.cache/wezterm-role-map.json"
+
+-- Minimal JSON string escaper. The values here are purpose names, hex colours
+-- and integers, so this only has to be correct rather than general — but it is
+-- written properly anyway, because a purpose name with a quote in it would
+-- otherwise emit a file that parses as neither JSON nor anything else, and a
+-- consumer reading it would fail silently rather than loudly.
+local function json_escape(s)
+  return (tostring(s):gsub('[%c"\\]', function(c)
+    if c == '"' then return '\\"' end
+    if c == "\\" then return "\\\\" end
+    if c == "\n" then return "\\n" end
+    if c == "\r" then return "\\r" end
+    if c == "\t" then return "\\t" end
+    return string.format("\\u%04x", string.byte(c))
+  end))
+end
+
+-- Publish `purpose -> { chip, window_id, scheme }` for every purpose that
+-- currently holds a window. A purpose with no live window is omitted rather than
+-- emitted with a null id: a consumer that sees the key knows the window exists.
+--
+-- Write-then-rename, so a reader never observes a half-written file. The rename
+-- is atomic within a filesystem, and both paths are under $HOME.
+local function export_role_map()
+  local map = wezterm.GLOBAL.window_purpose or {}
+  local by_purpose = {}
+  for id, purpose in pairs(map) do
+    by_purpose[purpose] = id
+  end
+
+  local rows = {}
+  for _, spec in ipairs(window_specs) do
+    local id = by_purpose[spec.purpose]
+    if id then
+      rows[#rows + 1] = string.format(
+        '  "%s": {"chip": %s, "window_id": %d, "scheme": "%s"}',
+        json_escape(spec.purpose),
+        spec.chip and ('"' .. json_escape(spec.chip) .. '"') or "null",
+        tonumber(id) or 0,
+        json_escape(spec.scheme)
+      )
+    end
+  end
+
+  local body = "{\n" .. table.concat(rows, ",\n") .. "\n}\n"
+  local tmp = ROLE_MAP_PATH .. ".tmp"
+  local f = io.open(tmp, "w")
+  if not f then
+    -- Reported, never silent: a consumer reading a stale map would route to a
+    -- window id that no longer exists, and nothing would say why.
+    wezterm.log_error("WEZROLE: cannot write " .. tmp)
+    return
+  end
+  f:write(body)
+  f:close()
+  os.rename(tmp, ROLE_MAP_PATH)
 end
 
 wezterm.GLOBAL.window_purpose = wezterm.GLOBAL.window_purpose or {}
@@ -408,6 +488,11 @@ local function reconcile()
   -- second-ish on every window, which is visible flicker for no reason; never
   -- forcing leaves a moved pane drawn in its old window's palette.
   reassert_schemes(panes_moved())
+
+  -- 6. Republish the role map for out-of-process consumers. Placed last, after
+  -- the prune/adopt pass has settled which window holds which purpose — an
+  -- export taken earlier would publish the pre-adoption mapping for one tick.
+  export_role_map()
 end
 
 -- Heartbeat: update-status fires roughly once a second per window, so it gives
@@ -709,6 +794,27 @@ if is_windows then
   config.window_background_opacity = 1.0
   config.window_frame.font_size = 12.0
 end
+
+-- Raise a pane's window from the shell. `wezterm cli activate-tab` / `activate-pane`
+-- cannot cross OS windows and macOS Accessibility cannot focus WezTerm's windows
+-- (measured 2026-09-18: AXRaise / AXMain / AXFocused / `activate` all no-ops), so
+-- the raise has to happen inside WezTerm. Trigger it by writing a user-var escape
+-- to the target pane's tty:
+--   printf '\027]1337;SetUserVar=raise=%s\007' "$(printf 1 | base64)" > /dev/ttysNNN
+-- (tty_name comes from `wezterm cli list --format json`). ~/.claude/scripts/jump.py
+-- is the caller.
+--
+-- NOTE (2026-09-20): this block lived ONLY in the live ~/.config/wezterm/wezterm.lua
+-- for two days — it was never committed. Because `./install` replaces that file with
+-- the repo copy, the next install from a master without this block would have
+-- silently deleted it and broken jump.py's cross-window raise. Committed here to
+-- bring the repo level with what the running config actually does.
+wezterm.on("user-var-changed", function(window, pane, name, value)
+  if name == "raise" then
+    pane:activate()
+    window:focus()
+  end
+end)
 
 if is_macos then
   config.window_background_opacity = 1.0
