@@ -112,14 +112,22 @@ end
 -- is atomic within a filesystem, and both paths are under $HOME.
 local function export_role_map()
   local map = wezterm.GLOBAL.window_purpose or {}
-  local by_purpose = {}
-  for id, purpose in pairs(map) do
-    by_purpose[purpose] = id
-  end
-
   local rows = {}
   for _, spec in ipairs(window_specs) do
-    local id = by_purpose[spec.purpose]
+    -- Index the registry BY KEY. `pairs()` over the GLOBAL-backed table yields
+    -- the raw stored `Value` wrappers, and a wrapper never equals a plain
+    -- string — so any match built from pairs()'s value misses every time.
+    -- `map[wid]` instead goes through __index, which unwraps the simple value,
+    -- and that is exactly the read `purpose_of` already relies on. The tostring
+    -- clause is a belt-and-braces fallback if a future build stops unwrapping.
+    local id = nil
+    for wid in pairs(map) do
+      local stored = map[wid]
+      if stored == spec.purpose or tostring(stored) == spec.purpose then
+        id = wid
+        break
+      end
+    end
     if id then
       rows[#rows + 1] = string.format(
         '  "%s": {"chip": %s, "window_id": %d, "scheme": "%s"}',
