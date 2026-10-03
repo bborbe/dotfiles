@@ -59,13 +59,17 @@ if [ -n "$flagged" ]; then
 	echo "" >&2
 	exit 1
 fi
-
 # --- Windows-safe filenames (Obsidian vaults only) --------------------------
 # Windows cannot check out a path containing : ? * " < > |, one whose component
-# ends in a dot or a space, or one named after a reserved device (CON PRN AUX
-# NUL COM1-9 LPT1-9). Such a path commits fine on macOS and then blocks
+# ends in a dot or a space, or one whose stem is a reserved device name (CON PRN
+# AUX NUL COM1-9 LPT1-9). Such a path commits fine on macOS and then blocks
 # `git pull` on the Windows clone — the Personal vault sat 77,656 commits behind
 # from August to October 2026 because ~145 of them were on origin/master.
+#
+# The stem, not the whole name, is what Windows reserves: MS documents that
+# "NUL.txt and NUL.tar.gz are both equivalent to NUL", so the test is on the text
+# before the first dot. Matching the whole name instead would let NUL.txt.md
+# through — the exact failure this block exists to prevent.
 #
 # Scope: any repo carrying an .obsidian/ directory, i.e. an Obsidian vault.
 # Code repos are deliberately exempt — a test fixture may legitimately carry one
@@ -81,25 +85,54 @@ fi
 # logs "Sync failed: ... Continuing to watch..." — the file stays uncommitted,
 # the daemon stays up, and the next tick retries.
 #
+# Residual, accepted: the flagged paths are echoed into this message, so a file
+# whose own name contains one of those two phrases (e.g. "Fix conflict markers:
+# in X.md") can still re-trigger that misclassification. The commit is blocked
+# either way — only the daemon bounce and the wording differ — and moving the
+# path list to stdout to dodge it would split the message across two streams and
+# print the paths out of order in the normal case.
+#
 # Emergency override: `git commit --no-verify` (bypasses ALL client hooks).
 if [ -d "$repo_root/.obsidian" ]; then
+	# Read the staged paths into a file rather than a process substitution: a
+	# substitution's exit status never reaches `set -e`, so a failing
+	# `git diff` would leave the loop with nothing to read and let the commit
+	# through — a guard that fails open exactly when it cannot do its job.
+	staged_list="$(mktemp "${TMPDIR:-/tmp}/winfilename.XXXXXX")"
+	trap 'rm -f "$staged_list"' EXIT
+	if ! git diff --cached --diff-filter=AMR --name-only -z >"$staged_list"; then
+		echo "" >&2
+		echo "✋ Blocked: could not read the staged paths, so the Windows-safe" >&2
+		echo "   filename check could not run. Refusing to guess." >&2
+		echo "" >&2
+		echo "   Emergency override: git commit --no-verify" >&2
+		echo "" >&2
+		exit 1
+	fi
+
 	unsafe=""
 	while IFS= read -r -d '' path; do
 		base="${path##*/}"
+		stem="${base%%.*}"
 		reason=""
-		if printf '%s' "$path" | grep -qE '[:?*"<>|]'; then
+		# nocasematch so the reserved-device test is case-insensitive without
+		# forking a `tr`; bash 3.1+, so it holds on macOS's stock bash 3.2.
+		shopt -s nocasematch
+		if [[ "$path" =~ [:?*\"\<\>\|] ]]; then
 			reason='contains one of  : ? * " < > |'
-		elif printf '%s' "$path" | grep -qE '[ .]/'; then
+		elif [[ "$path" =~ [\ .]/ ]]; then
 			reason="has a path component ending in a dot or a space"
-		elif printf '%s' "$base" | grep -qE '[ .]$'; then
+		elif [[ "$base" =~ [\ .]$ ]]; then
 			reason="ends in a dot or a space"
-		elif printf '%s' "$base" | grep -qiE '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.[^.]*)?$'; then
+		elif [[ "$stem" =~ ^(con|prn|aux|nul|com[1-9]|lpt[1-9])$ ]]; then
 			reason="is a reserved Windows device name"
 		fi
+		shopt -u nocasematch
 		if [ -n "$reason" ]; then
 			unsafe="${unsafe}${path}  —  ${reason}"$'\n'
 		fi
-	done < <(git diff --cached --diff-filter=AMR --name-only -z)
+	done <"$staged_list"
+	rm -f "$staged_list"
 	unsafe="${unsafe%$'\n'}"
 
 	if [ -n "$unsafe" ]; then
@@ -109,8 +142,8 @@ if [ -d "$repo_root/.obsidian" ]; then
 		printf '%s\n' "$unsafe" | sed 's/^/     /' >&2
 		echo "" >&2
 		echo "   Windows rejects these characters in a path component: : ? * \" < > |" >&2
-		echo "   It also rejects a component ending in a dot or a space, and the" >&2
-		echo "   reserved names CON PRN AUX NUL COM1-9 LPT1-9." >&2
+		echo "   It also rejects a component ending in a dot or a space, and a name" >&2
+		echo "   whose stem is a reserved device: CON PRN AUX NUL COM1-9 LPT1-9." >&2
 		echo "" >&2
 		echo "   Rename the file, then commit again:" >&2
 		echo "     notesmd-cli move --vault <vault> \"<old>\" \"<new>\"" >&2
