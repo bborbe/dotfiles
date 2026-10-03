@@ -196,5 +196,58 @@ else
 	ok "refusal text carries neither git-ai-sync trigger phrase"
 fi
 
+echo "nested path under a content root — a flat glob would never see the row"
+check '25 Tasks/Plain Name.md' ALLOW
+check '25 Tasks/Nested Dir/File.md' BLOCK
+check '24 Goals/A B/Goal.md' BLOCK
+check '23 Topics/x/y.md' BLOCK
+check '65 Runbooks/a/b.md' BLOCK
+check 'tasks/nested/File.md' BLOCK
+check '25 Tasks/Add make worktree target to sm-octopus base repo + fix missing dev/staging worktrees.md' BLOCK
+check '60 Periodic Notes/Daily/2026-10-03.md' ALLOW
+check '50 Knowledge Base/Recurring Template Verdicts/x.md' ALLOW
+check '30 Analysis/prod/ORB DE40 V25/x.md' ALLOW
+check '55 AI Knowledge Sharing/Draft/X/Blog Post - Y.md' ALLOW
+check 'tasks/.task-watcher-tests-archive/t.md' ALLOW
+check '25 Tasks/Not Markdown/x.txt' ALLOW
+check '25 Tasks/Nested Dir/File.md' ALLOW no
+
+n=$((n + 1))
+got="$(
+	init_repo
+	mkdir -p .obsidian "25 Tasks/A B"
+	printf 'x\n' >"25 Tasks/A B/c.md"
+	git add -A >/dev/null 2>&1
+	git commit -q -m seed --no-verify >/dev/null 2>&1
+	git mv "25 Tasks/A B/c.md" "25 Tasks/A Bc.md"
+	git add -A >/dev/null 2>&1
+	if git commit -q -m rename >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = ALLOW ]; then
+	ok "rename away from a nested path commits (the prescribed remediation)"
+else
+	no "rename away from a nested path got=$got want=ALLOW — the hook blocks its own fix"
+fi
+
+echo "nested-path message wording (cross-tool contract with git-ai-sync)"
+n=$((n + 1))
+err="$(
+	init_repo
+	mkdir -p .obsidian "25 Tasks/Nested Dir"
+	printf 'x\n' >"25 Tasks/Nested Dir/File.md"
+	git add -A >/dev/null 2>&1
+	git commit -m t 2>&1 >/dev/null || true
+)"
+bad=""
+if printf '%s' "$err" | grep -qi 'refusing commit'; then bad="refusing commit"; fi
+if printf '%s' "$err" | grep -qi 'conflict markers'; then bad="${bad:+$bad, }conflict markers"; fi
+if [ -n "$bad" ]; then
+	no "nested-path refusal contains \"$bad\" — git-ai-sync's is_marker_refusal() would misread it as a conflict-marker refusal and kill the sync daemon"
+elif ! printf '%s' "$err" | grep -q 'Blocked: a task or goal file sits in a subdirectory'; then
+	no "nested-path refusal missing its expected headline — did the message move?"
+else
+	ok "nested-path refusal carries neither git-ai-sync trigger phrase"
+fi
+
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]
