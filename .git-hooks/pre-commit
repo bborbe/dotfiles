@@ -60,4 +60,65 @@ if [ -n "$flagged" ]; then
 	exit 1
 fi
 
+# --- Windows-safe filenames (Obsidian vaults only) --------------------------
+# Windows cannot check out a path containing : ? * " < > |, one whose component
+# ends in a dot or a space, or one named after a reserved device (CON PRN AUX
+# NUL COM1-9 LPT1-9). Such a path commits fine on macOS and then blocks
+# `git pull` on the Windows clone — the Personal vault sat 77,656 commits behind
+# from August to October 2026 because ~145 of them were on origin/master.
+#
+# Scope: any repo carrying an .obsidian/ directory, i.e. an Obsidian vault.
+# Code repos are deliberately exempt — a test fixture may legitimately carry one
+# of these characters, and no code repo syncs to Windows.
+#
+# Wording is load-bearing. git-ai-sync classifies a refusal by substring match on
+# git's stderr: `is_marker_refusal()` in git_ai_sync/git_operations.py fires on
+# "refusing commit" OR "conflict markers". A message carrying either phrase is
+# read as a conflict-marker refusal — git-ai-sync then hunts for marker files,
+# finds none, and sys.exit(1)s with "Run 'git-ai-sync resolve <path>'", pointing
+# the operator at conflict resolution for a filename problem. This block says
+# "Blocked" and never either phrase, so git-ai-sync raises a plain GitError and
+# logs "Sync failed: ... Continuing to watch..." — the file stays uncommitted,
+# the daemon stays up, and the next tick retries.
+#
+# Emergency override: `git commit --no-verify` (bypasses ALL client hooks).
+if [ -d "$repo_root/.obsidian" ]; then
+	unsafe=""
+	while IFS= read -r -d '' path; do
+		base="${path##*/}"
+		reason=""
+		if printf '%s' "$path" | grep -qE '[:?*"<>|]'; then
+			reason='contains one of  : ? * " < > |'
+		elif printf '%s' "$path" | grep -qE '[ .]/'; then
+			reason="has a path component ending in a dot or a space"
+		elif printf '%s' "$base" | grep -qE '[ .]$'; then
+			reason="ends in a dot or a space"
+		elif printf '%s' "$base" | grep -qiE '^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.[^.]*)?$'; then
+			reason="is a reserved Windows device name"
+		fi
+		if [ -n "$reason" ]; then
+			unsafe="${unsafe}${path}  —  ${reason}"$'\n'
+		fi
+	done < <(git diff --cached --diff-filter=AMR --name-only -z)
+	unsafe="${unsafe%$'\n'}"
+
+	if [ -n "$unsafe" ]; then
+		echo "" >&2
+		echo "✋ Blocked: staged path is not safe on Windows" >&2
+		echo "" >&2
+		printf '%s\n' "$unsafe" | sed 's/^/     /' >&2
+		echo "" >&2
+		echo "   Windows rejects these characters in a path component: : ? * \" < > |" >&2
+		echo "   It also rejects a component ending in a dot or a space, and the" >&2
+		echo "   reserved names CON PRN AUX NUL COM1-9 LPT1-9." >&2
+		echo "" >&2
+		echo "   Rename the file, then commit again:" >&2
+		echo "     notesmd-cli move --vault <vault> \"<old>\" \"<new>\"" >&2
+		echo "" >&2
+		echo "   Emergency override: git commit --no-verify" >&2
+		echo "" >&2
+		exit 1
+	fi
+fi
+
 exit 0
