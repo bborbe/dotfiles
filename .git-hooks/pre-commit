@@ -139,7 +139,8 @@ if [ -d "$repo_root/.obsidian" ]; then
 			unsafe="${unsafe}${path}  —  ${reason}"$'\n'
 		fi
 	done <"$staged_list"
-	rm -f "$staged_list"
+	# No `rm` here: the EXIT trap owns cleanup, and the nested-path check below
+	# reads the same list.
 	unsafe="${unsafe%$'\n'}"
 
 	if [ -n "$unsafe" ]; then
@@ -153,6 +154,67 @@ if [ -d "$repo_root/.obsidian" ]; then
 		echo "   whose stem is a reserved device: CON PRN AUX NUL COM1-9 LPT1-9." >&2
 		echo "" >&2
 		echo "   Rename the file, then commit again:" >&2
+		echo "     notesmd-cli move --vault <vault> \"<old>\" \"<new>\"" >&2
+		echo "" >&2
+		echo "   Emergency override: git commit --no-verify" >&2
+		echo "" >&2
+		exit 1
+	fi
+
+	# --- Nested path under a content root (Obsidian vaults only) --------------
+	# A vault write that builds a filename from a title containing "/" writes a
+	# DIRECTORY named after the title's prefix holding a file named after its
+	# remainder: the title "Add dev/staging worktrees" lands on disk as a
+	# directory "25 Tasks/Add dev" holding "staging worktrees.md". The joined path
+	# is what git tracks, so `git ls-files` and every path-based reader see a
+	# normal flat task while a flat glob (`25 Tasks/*.md`) never descends and never
+	# sees it — the row is half-visible, and one reader reports the set complete
+	# while another is silent.
+	#
+	# The character test above cannot catch this: "/" is a legitimate path
+	# separator, so it is deliberately absent from that class. The defect here is
+	# the SHAPE, not a character — a content root that should be flat is not.
+	#
+	# The rule is deliberately narrow. A "parent directory contains a space" rule
+	# was measured and rejected: it fires on 155 legitimate paths across the
+	# registered vaults ("50 Knowledge Base/Recurring Template Verdicts/...",
+	# "55 AI Knowledge Sharing/Draft/...", "30 Analysis/prod/ORB DE40 V25/...").
+	# Scoping to the four content roots that hold title-derived filenames gives
+	# exactly one hit across all 14 registered vaults — the real defect — and zero
+	# false positives. Measured 2026-10-03.
+	#
+	# Hidden components are exempt: private-agent's tasks/.task-watcher-tests-archive/
+	# is a legitimate archive, not a title-derived directory. Non-markdown leaves
+	# are exempt too — this defect always produces a .md.
+	#
+	# Emergency override: `git commit --no-verify` (bypasses ALL client hooks).
+	nested=""
+	while IFS= read -r -d '' path; do
+		case "/$path" in *"/."*) continue ;; esac
+		case "$path" in *.md) ;; *) continue ;; esac
+		case "$path" in */*/*) ;; *) continue ;; esac
+		first="${path%%/*}"
+		shopt -s nocasematch
+		if [[ "$first" =~ ^([0-9]+\ )?(tasks|goals|topics|runbooks)$ ]]; then
+			nested="${nested}${path}"$'\n'
+		fi
+		shopt -u nocasematch
+	done <"$staged_list"
+	nested="${nested%$'\n'}"
+
+	if [ -n "$nested" ]; then
+		echo "" >&2
+		echo "✋ Blocked: a task or goal file sits in a subdirectory, where a flat" >&2
+		echo "   glob (25 Tasks/*.md) will never see it." >&2
+		echo "" >&2
+		printf '%s\n' "$nested" | sed 's/^/     /' >&2
+		echo "" >&2
+		echo "   A title containing \"/\" builds a directory from its prefix and a file" >&2
+		echo "   from its remainder. Git tracks the joined path, so the row looks" >&2
+		echo "   normal to path-based readers and is invisible to every flat glob." >&2
+		echo "" >&2
+		echo "   Flatten it, then commit again:" >&2
+		echo "     vault-cli filename sanitize -    # derives the safe stem from stdin" >&2
 		echo "     notesmd-cli move --vault <vault> \"<old>\" \"<new>\"" >&2
 		echo "" >&2
 		echo "   Emergency override: git commit --no-verify" >&2
