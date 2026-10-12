@@ -37,6 +37,57 @@ case "$repo_root" in
 	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
 esac
 
+# --- protected branches (opt-in per repo) ------------------------------------
+# Refuse a direct commit on a branch this repo declares protected:
+#
+#	git config hook.protectBranches "master main"
+#
+# Unset is the default and protects nothing. The read below is --local on
+# purpose, which is what makes "per repo" true rather than merely asserted: a
+# GLOBAL value would break every writer that makes a real commit on master — the
+# vault's autocommit (every ~40-111s) and manual release commits
+# (`release vX.Y.Z` from /coding:commit on master) — so it is ignored here rather
+# than honoured.
+#
+# A MERGE is not a direct commit: `git merge` runs pre-merge-commit, never this
+# hook, so a protected branch still accepts merges. That is the intended shape
+# for deploy worktrees — `git fetch && git merge origin/master` in trading-dev
+# keeps working with `dev` protected, while a hand-commit there is refused.
+#
+# Detached HEAD is NOT covered: `git symbolic-ref` yields nothing there, so no
+# branch matches and the commit is allowed. `git checkout --detach HEAD && git
+# commit && git push origin HEAD:master` therefore reaches a protected branch
+# without this block firing. Left as a known gap rather than refused, because a
+# rebase detaches too and would then be blocked mid-flight.
+#
+# Wording is load-bearing — this block must not contain the substrings
+# "refusing commit" or "conflict markers". git-ai-sync's is_marker_refusal()
+# matches those, then hunts for marker files, finds none, and sys.exit(1)s its
+# launchd daemon. test-pre-commit.sh pins that contract.
+protected="$(git config --local --get hook.protectBranches 2>/dev/null || true)"
+if [ -n "$protected" ]; then
+	branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+	# Word splitting is intended: the value is a whitespace-separated list.
+	# shellcheck disable=SC2086
+	for b in $protected; do
+		if [ "$branch" = "$b" ]; then
+			echo "" >&2
+			echo "✋ Blocked: $branch is a protected branch in this repo" >&2
+			echo "" >&2
+			echo "   Work lands on it through a merged pull request, never as a" >&2
+			echo "   direct commit. Move this change to its own worktree:" >&2
+			echo "     git fetch && git worktree add --no-track ../<repo>-<name> -b <branch> origin/master" >&2
+			echo "" >&2
+			echo "   To unprotect this repo:" >&2
+			echo "     git config --unset hook.protectBranches" >&2
+			echo "" >&2
+			echo "   Emergency override: git commit --no-verify" >&2
+			echo "" >&2
+			exit 1
+		fi
+	done
+fi
+
 # -z keeps paths with spaces/quotes intact (vault task filenames routinely
 # contain both); git would otherwise C-quote them and the loop would misread.
 flagged=""
