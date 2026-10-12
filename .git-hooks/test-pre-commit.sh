@@ -308,6 +308,33 @@ else
 	no "global config got=$got want=ALLOW — the guard is not per-repo"
 fi
 
+n=$((n + 1))
+got="$(
+	init_repo
+	# A merge into a protected branch must pass: deploy worktrees receive work by
+	# `git merge origin/master`, so a guard that refused merges would break them.
+	printf 'x\n' >base.txt
+	git add -A >/dev/null 2>&1
+	git commit -q --no-verify -m base >/dev/null 2>&1
+	git branch feat
+	printf 'y\n' >onmaster.txt
+	git add -A >/dev/null 2>&1
+	git commit -q --no-verify -m onmaster >/dev/null 2>&1
+	DOTFILES_ALLOW_UNPIN=1 git checkout -q feat
+	printf 'z\n' >onfeat.txt
+	git add -A >/dev/null 2>&1
+	git commit -q --no-verify -m onfeat >/dev/null 2>&1
+	DOTFILES_ALLOW_UNPIN=1 git checkout -q master
+	git config hook.protectBranches "master"
+	# --no-ff with diverged history: a real merge COMMIT, not a fast-forward.
+	if git merge -q --no-ff --no-edit feat >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = ALLOW ]; then
+	ok "a merge commit into a protected branch passes (only direct commits are refused)"
+else
+	no "merge into protected branch got=$got want=ALLOW — deploy worktrees could not merge origin/master"
+fi
+
 echo "protected-branch message wording (cross-tool contract with git-ai-sync)"
 n=$((n + 1))
 err="$(
