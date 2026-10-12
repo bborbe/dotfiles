@@ -33,9 +33,10 @@ if [ "$state" != "prepared" ]; then
 	exit 0
 fi
 
-# Collect the new-value of every HEAD line. Pure bash, no fork: this runs on
-# every ref update in every repo, and the overwhelming majority — commits,
-# branch and tag creates, fetches — carry no HEAD line at all.
+# Collect the new-value of every HEAD line. The loop below forks nothing (the
+# single `cat` above is the only fork here), so this stays cheap on every ref
+# update in every repo — and the overwhelming majority of those updates
+# (commits, branch and tag creates, fetches) carry no HEAD line at all.
 head_newvalues=""
 while IFS=' ' read -r _old newval refname; do
 	if [ "$refname" = "HEAD" ]; then
@@ -46,7 +47,10 @@ if [ -z "$head_newvalues" ]; then
 	exit 0
 fi
 
-if [ -n "${DOTFILES_ALLOW_UNPIN:-}" ]; then
+# Only the documented spelling disarms the guard. A bare truthiness test let
+# `DOTFILES_ALLOW_UNPIN=0` — the intuitive off-spelling, and one a launchd
+# plist or .env file sets without meaning to — switch the guard off silently.
+if [ "${DOTFILES_ALLOW_UNPIN:-0}" = "1" ]; then
 	exit 0
 fi
 
@@ -63,9 +67,11 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 if [ -z "$root" ]; then
 	exit 0
 fi
-# Physical form: --show-toplevel yields /tmp/... or /private/tmp/... depending
-# on how the shell reached the tree, so both sides are normalised before they
-# are compared.
+# Physical form, so a tree reached through /tmp and one reached through
+# /private/tmp compare equal. Only THIS side is normalised: the registry side is
+# tilde-expanded and trailing-slash-stripped but NOT symlink-resolved, so a
+# registry path must be recorded in its physical form — `pwd -P` in the tree,
+# not the path you happened to cd through.
 root=$(cd "$root" 2>/dev/null && pwd -P) || exit 0
 
 # Skip throwaway trees, matching pre-commit and pre-push. A sandbox repo cannot
@@ -74,14 +80,36 @@ case "$root" in
 	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
 esac
 
-# One awk, not grep+cut: it expands `~/`, skips comments and reads the branch in
-# the same pass. A pinned path that no longer exists simply never matches — this
-# hook runs in every repo on the machine and must never break an unrelated git
-# command on stale data.
-pinned=$(awk -v p="$root" -v home="$HOME" '
+# HOME is defaulted, never dereferenced bare. Under `set -u` a bare "$HOME"
+# aborts the whole substitution when the variable is unbound — the normal state
+# for launchd/systemd services and `env -i` — and the abort leaves `pinned`
+# empty, so the guard exits 0 and lets the switch through. That is the fail-open
+# direction, in exactly the daemon environment this hook exists to cover.
+home="${HOME:-}"
+if [ -z "$home" ] && grep -q '^[[:space:]]*~/' "$registry" 2>/dev/null; then
+	# A `~/` entry cannot be evaluated without a home directory. Refuse rather
+	# than report "not pinned": a silent pass here is the failure this hook
+	# exists to prevent, and the registry is a file the operator can fix.
+	echo "" >&2
+	echo "✋ Blocked: $registry uses '~/' paths but \$HOME is unset" >&2
+	echo "" >&2
+	echo "   The pin cannot be evaluated, so this move is refused rather than" >&2
+	echo "   allowed. Record absolute paths in the registry." >&2
+	echo "" >&2
+	echo "   Emergency override: DOTFILES_ALLOW_UNPIN=1 <the same git command>" >&2
+	echo "" >&2
+	exit 1
+fi
+
+# One awk, not grep+cut: it expands `~/`, strips a trailing slash, skips
+# comments and reads the branch in the same pass. A pinned path that no longer
+# exists simply never matches — this hook runs in every repo on the machine and
+# must never break an unrelated git command on stale data.
+pinned=$(awk -v p="$root" -v home="$home" '
 	/^[[:space:]]*#/ { next }
 	NF < 2 { next }
 	{ path = $1
+	  sub(/\/+$/, "", path)
 	  if (path ~ /^~\//) path = home substr(path, 2)
 	  if (path == p) { print $2; exit } }
 ' "$registry")

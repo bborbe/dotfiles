@@ -291,6 +291,23 @@ else
 	no "unlisted branch got=$got want=ALLOW"
 fi
 
+n=$((n + 1))
+got="$(
+	init_repo
+	# A GLOBAL value must be ignored — honouring it would break the vault and
+	# trading, which is why the guard reads --local. GIT_CONFIG_GLOBAL points at
+	# a scratch file so the real global config is never touched.
+	printf '[hook]\n\tprotectBranches = master\n' >"$scratch/globalconfig"
+	printf 'x\n' >f.txt
+	git add -A >/dev/null 2>&1
+	if GIT_CONFIG_GLOBAL="$scratch/globalconfig" git commit -q -m t >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = ALLOW ]; then
+	ok "a GLOBAL hook.protectBranches is ignored (per-repo is enforced, not asserted)"
+else
+	no "global config got=$got want=ALLOW — the guard is not per-repo"
+fi
+
 echo "protected-branch message wording (cross-tool contract with git-ai-sync)"
 n=$((n + 1))
 err="$(

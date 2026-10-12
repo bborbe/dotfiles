@@ -67,6 +67,7 @@ new_repo() {
 		git commit -q --no-verify -m seed
 		git branch other
 		git branch third
+		git branch fourth
 	)
 }
 
@@ -169,6 +170,41 @@ if [ "$rc" = 0 ] && [ "$got" = third ]; then
 else
 	no "escape hatch rc=$rc branch=$got"
 fi
+
+echo "an off-spelling of the override must not disarm the guard"
+n=$((n + 1))
+rc=0
+( cd "$scratch/main2-linked" && DOTFILES_PIN_REGISTRY="$registry" DOTFILES_ALLOW_UNPIN=0 git checkout fourth ) >/dev/null 2>&1 || rc=$?
+got="$( cd "$scratch/main2-linked" && git rev-parse --abbrev-ref HEAD )"
+if [ "$rc" != 0 ] && [ "$got" = third ]; then
+	ok "DOTFILES_ALLOW_UNPIN=0 is refused — only =1 disarms it"
+else
+	no "DOTFILES_ALLOW_UNPIN=0 rc=$rc branch=$got — an off-spelling disarmed the guard"
+fi
+
+echo "a trailing slash in the registry still matches"
+n=$((n + 1))
+d="$scratch/slash$n"
+new_repo "$d"
+( cd "$d" && DOTFILES_PIN_REGISTRY=/dev/null git worktree add -q "$d-linked" other )
+printf '%s/\tother\n' "$d-linked" >"$registry"
+rc=0
+( cd "$d-linked" && DOTFILES_PIN_REGISTRY="$registry" git checkout third ) >/dev/null 2>&1 || rc=$?
+[ "$rc" != 0 ] && ok "trailing slash tolerated" || no "trailing slash broke the match (rc=$rc)"
+
+# The MAJOR this suite was extended for: under `set -u`, a bare "$HOME" in the
+# awk invocation aborted the substitution when HOME was unbound, leaving `pinned`
+# empty and the guard exiting 0 — a fail-open in exactly the daemon environment
+# (launchd/systemd, `env -i`) the hook claims to cover.
+echo "an unset HOME must not disarm the guard"
+n=$((n + 1))
+d="$scratch/nohome$n"
+new_repo "$d"
+( cd "$d" && DOTFILES_PIN_REGISTRY=/dev/null git worktree add -q "$d-linked" other )
+printf '%s\tother\n' "$d-linked" >"$registry"
+rc=0
+( cd "$d-linked" && env -u HOME DOTFILES_PIN_REGISTRY="$registry" git checkout third ) >/dev/null 2>&1 || rc=$?
+[ "$rc" != 0 ] && ok "unset HOME still blocks (absolute registry paths)" || no "unset HOME disarmed the guard (rc=$rc)"
 
 echo "an absent registry disables the guard"
 n=$((n + 1))

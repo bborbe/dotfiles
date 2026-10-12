@@ -4,7 +4,11 @@
 # aborts any HEAD update that would switch it away or detach it. Unlisted paths
 # are untouched, so `git init`, `git clone` and `git worktree add` keep working
 # everywhere else. The line is whitespace-split, so a path containing a space is
-# not supported; `~/` expands to $HOME (a literal `$HOME` does not).
+# not supported; `~/` expands to $HOME (a literal `$HOME` does not), and a
+# trailing slash is ignored. Record the path in its PHYSICAL form — what
+# `pwd -P` prints inside the tree. The hook resolves symlinks on its own side
+# but not on this one, so a path reached through a symlinked directory would
+# never match.
 #
 # Override for one command:  DOTFILES_ALLOW_UNPIN=1 <git command>
 #
@@ -12,12 +16,16 @@
 # Deploy worktrees. Each is a linked worktree whose branch decides what a
 # `make buca` from it ships, so a switch here deploys the wrong code.
 #
-~/Documents/workspaces/trading-dev            dev
-~/Documents/workspaces/trading-prod           prod
-~/Documents/workspaces/agent-dev              dev
-~/Documents/workspaces/sm-octopus-dev         dev
-~/Documents/workspaces/sm-octopus-staging     staging
-~/Documents/workspaces/discord-assistant-dev  dev
+# Absolute, not `~/`: a `~/` entry is expanded against the HOME of whoever runs
+# git, so it silently stops matching for a launchd/systemd daemon (no HOME) or a
+# process running as another user. The hook refuses rather than allows when it
+# meets a `~/` entry it cannot expand, but absolute paths avoid the question.
+/Users/bborbe/Documents/workspaces/trading-dev            dev
+/Users/bborbe/Documents/workspaces/trading-prod           prod
+/Users/bborbe/Documents/workspaces/agent-dev              dev
+/Users/bborbe/Documents/workspaces/sm-octopus-dev         dev
+/Users/bborbe/Documents/workspaces/sm-octopus-staging     staging
+/Users/bborbe/Documents/workspaces/discord-assistant-dev  dev
 #
 # ---------------------------------------------------------------------------
 # Deliberately NOT pinned, recorded so a later reader does not "fix" them:
