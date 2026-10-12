@@ -3,12 +3,20 @@
 # reference-transaction: refuse a HEAD move that would take a pinned working
 # tree off its branch.
 #
-# A path is pinned by listing it in `.git-hooks/branch-pins` (one
-# `<absolute-path> <branch>` per line). Unlisted paths are untouched, so
-# `git init`, `git clone` and `git worktree add` keep working everywhere else,
-# and so does any daemon that switches branches in a repo nobody pinned —
-# dark-factory's Brancher runs `git checkout -b` / `git checkout <name>` in
-# whichever repo it processes, and none of those are listed.
+# A working tree is pinned by per-worktree git config, set INSIDE that tree:
+#
+#	git config extensions.worktreeConfig true      # once per repo
+#	git config --worktree hook.pinBranch dev        # in the tree to pin
+#
+# (`git-pin-worktree` in bborbe/scripts does both.) Only a value from the
+# WORKTREE scope counts. A `--local` value is shared by every worktree of the
+# repo, main checkout included, and a pinned main checkout cannot create
+# worktrees — see "Not covered" below — so a repo-wide value is ignored rather
+# than honoured.
+#
+# Trees nobody pinned are untouched, so `git init`, `git clone`, `git worktree
+# add` and dark-factory's Brancher (which runs `git checkout -b` /
+# `git checkout <name>` in whatever repo it processes) all keep working.
 #
 # ONLY the "prepared" state is judged. In "preparing" git has not yet resolved
 # symbolic refs, so an ORDINARY BRANCH UPDATE IS REPORTED UNDER THE NAME `HEAD` —
@@ -19,10 +27,22 @@
 #   prepared,  commit        : <old>  <new>              refs/heads/master
 #   preparing, that commit   : <old>  <new>              HEAD          <-- trap
 #
+# Not covered — measured 2026-10-12:
+#
+#   * MAIN checkouts. During `git worktree add` git runs this hook at the
+#     INVOKING checkout while the HEAD line it emits names the NEW worktree. The
+#     two are indistinguishable from in here, so a pinned main checkout would
+#     refuse to create any worktree. Main checkouts are covered instead by
+#     ~/.claude/hooks/deny-branch-switch-in-main-checkout.sh (Claude only).
+#   * CREATING a tree. `git worktree remove ../trading-dev` followed by
+#     `git worktree add ../trading-dev -b feat/x` succeeds, and the new tree
+#     starts unpinned. A pin guards an existing tree against being switched; it
+#     says nothing about how the tree is built. Re-pin after a rebuild.
+#
 # Override for one command:  DOTFILES_ALLOW_UNPIN=1 <git command>
 #
 # Installed globally via `core.hooksPath = ~/.git-hooks` in .gitconfig.osx.
-# To disable everywhere, remove this file; the registry alone does nothing.
+# To disable everywhere, remove this file.
 
 set -u
 
@@ -33,10 +53,10 @@ if [ "$state" != "prepared" ]; then
 	exit 0
 fi
 
-# Collect the new-value of every HEAD line. The loop below forks nothing (the
-# single `cat` above is the only fork here), so this stays cheap on every ref
-# update in every repo — and the overwhelming majority of those updates
-# (commits, branch and tag creates, fetches) carry no HEAD line at all.
+# Collect the new-value of every HEAD line. The loop forks nothing (the single
+# `cat` above is the only fork here), so this stays cheap on every ref update in
+# every repo — and most updates (commits, branch and tag creates, fetches) carry
+# no HEAD line at all.
 head_newvalues=""
 while IFS=' ' read -r _old newval refname; do
 	if [ "$refname" = "HEAD" ]; then
@@ -48,74 +68,23 @@ if [ -z "$head_newvalues" ]; then
 fi
 
 # Only the documented spelling disarms the guard. A bare truthiness test let
-# `DOTFILES_ALLOW_UNPIN=0` — the intuitive off-spelling, and one a launchd
-# plist or .env file sets without meaning to — switch the guard off silently.
+# `DOTFILES_ALLOW_UNPIN=0` — the intuitive off-spelling, and one a launchd plist
+# or .env file sets without meaning to — switch the guard off silently.
 if [ "${DOTFILES_ALLOW_UNPIN:-0}" = "1" ]; then
 	exit 0
 fi
 
-hook_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 0
-registry="${DOTFILES_PIN_REGISTRY:-$hook_dir/branch-pins}"
-if [ ! -f "$registry" ]; then
+# `--show-scope` reports where the value came from; anything but `worktree` is
+# ignored (see the header). No path is compared anywhere, so the trailing-slash,
+# symlink and unset-HOME mismatches a path registry suffered cannot occur.
+scoped=$(git config --show-scope --get hook.pinBranch 2>/dev/null) || exit 0
+scope="${scoped%%$'\t'*}"
+pinned="${scoped#*$'\t'}"
+if [ "$scope" != "worktree" ] || [ -z "$pinned" ]; then
 	exit 0
 fi
 
-# The tree whose HEAD is being updated. For `git worktree add` git points the
-# hook at the INVOKING checkout, so this resolves the tree the command was typed
-# in — which is why main checkouts are not pinned; see the registry header.
-root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-if [ -z "$root" ]; then
-	exit 0
-fi
-# Physical form, so a tree reached through /tmp and one reached through
-# /private/tmp compare equal. Only THIS side is normalised: the registry side is
-# tilde-expanded and trailing-slash-stripped but NOT symlink-resolved, so a
-# registry path must be recorded in its physical form — `pwd -P` in the tree,
-# not the path you happened to cd through.
-root=$(cd "$root" 2>/dev/null && pwd -P) || exit 0
-
-# Skip throwaway trees, matching pre-commit and pre-push. A sandbox repo cannot
-# affect shared state, so a pin there would only be a false positive.
-case "$root" in
-	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
-esac
-
-# HOME is defaulted, never dereferenced bare. Under `set -u` a bare "$HOME"
-# aborts the whole substitution when the variable is unbound — the normal state
-# for launchd/systemd services and `env -i` — and the abort leaves `pinned`
-# empty, so the guard exits 0 and lets the switch through. That is the fail-open
-# direction, in exactly the daemon environment this hook exists to cover.
-home="${HOME:-}"
-if [ -z "$home" ] && grep -q '^[[:space:]]*~/' "$registry" 2>/dev/null; then
-	# A `~/` entry cannot be evaluated without a home directory. Refuse rather
-	# than report "not pinned": a silent pass here is the failure this hook
-	# exists to prevent, and the registry is a file the operator can fix.
-	echo "" >&2
-	echo "✋ Blocked: $registry uses '~/' paths but \$HOME is unset" >&2
-	echo "" >&2
-	echo "   The pin cannot be evaluated, so this move is refused rather than" >&2
-	echo "   allowed. Record absolute paths in the registry." >&2
-	echo "" >&2
-	echo "   Emergency override: DOTFILES_ALLOW_UNPIN=1 <the same git command>" >&2
-	echo "" >&2
-	exit 1
-fi
-
-# One awk, not grep+cut: it expands `~/`, strips a trailing slash, skips
-# comments and reads the branch in the same pass. A pinned path that no longer
-# exists simply never matches — this hook runs in every repo on the machine and
-# must never break an unrelated git command on stale data.
-pinned=$(awk -v p="$root" -v home="$home" '
-	/^[[:space:]]*#/ { next }
-	NF < 2 { next }
-	{ path = $1
-	  sub(/\/+$/, "", path)
-	  if (path ~ /^~\//) path = home substr(path, 2)
-	  if (path == p) { print $2; exit } }
-' "$registry")
-if [ -z "$pinned" ]; then
-	exit 0
-fi
+root=$(git rev-parse --show-toplevel 2>/dev/null) || root="$PWD"
 
 while IFS= read -r newval; do
 	[ -n "$newval" ] || continue
@@ -138,8 +107,8 @@ while IFS= read -r newval; do
 	echo "   This tree must stay on $pinned. Make the change in its own worktree:" >&2
 	echo "     git fetch && git worktree add --no-track ../<repo>-<name> -b <branch> origin/master" >&2
 	echo "" >&2
-	echo "   To unpin, remove this tree's line from the registry:" >&2
-	echo "     $registry" >&2
+	echo "   To unpin this tree:" >&2
+	echo "     git config --worktree --unset hook.pinBranch" >&2
 	echo "" >&2
 	echo "   Emergency override: DOTFILES_ALLOW_UNPIN=1 <the same git command>" >&2
 	echo "" >&2

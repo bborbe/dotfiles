@@ -15,15 +15,14 @@
 #      worktree is refused by git itself ("already used by worktree") and would
 #      report BLOCK with the hook doing nothing. `third` is free, so a BLOCK can
 #      only come from the guard.
-#   2. A pin on a MAIN checkout cannot be tested with `git worktree add`: during
+#   2. A pin on a MAIN checkout cannot coexist with `git worktree add`: during
 #      the add git runs the hook at the INVOKING checkout while the HEAD line
-#      names the NEW worktree, so a pinned main checkout refuses the add. That is
-#      why main checkouts are unpinned, and why the add cases below run from an
-#      unpinned main checkout.
+#      names the NEW worktree. That is why only worktree-scope pins count, and
+#      why the add cases run from an unpinned main checkout.
 #
-# Scratch lives under $XDG_CACHE_HOME, never /tmp: the hook self-skips under
-# /tmp and /var/folders, so a scratch repo there would report ALLOW for every
-# case and the suite would pass vacuously.
+# Scratch lives under $XDG_CACHE_HOME, never /tmp: pre-commit and pre-push
+# self-skip under /tmp, and keeping every hook suite in the same place avoids a
+# case that passes vacuously because a sibling hook skipped it.
 
 set -euo pipefail
 
@@ -35,7 +34,6 @@ mkdir -p "$scratch_root"
 scratch="$(mktemp -d "$scratch_root/dotfiles-reference-transaction-test.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
 
-registry="$scratch/pins"
 pass=0
 fail=0
 n=0
@@ -50,7 +48,8 @@ no() {
 	printf '  FAIL %s\n' "$1"
 }
 
-# new_repo <dir> — master, one commit, and free branches `other` and `third`.
+# new_repo <dir> — master, one commit, and free branches `other`, `third`,
+# `fourth`, plus a tracked `sub/` directory.
 new_repo() {
 	mkdir -p "$1"
 	(
@@ -72,12 +71,16 @@ new_repo() {
 }
 
 # pair <id> — an UNPINNED main checkout plus a linked worktree on `other`, with
-# ONLY the linked worktree pinned. Sets $registry to that fixture.
+# ONLY the linked worktree pinned, the way git-pin-worktree does it.
 pair() {
 	local d="$scratch/main$1"
 	new_repo "$d"
-	( cd "$d" && DOTFILES_PIN_REGISTRY=/dev/null git worktree add -q "$d-linked" other )
-	printf '%s\tother\n' "$d-linked" >"$registry"
+	(
+		cd "$d" || exit 99
+		git worktree add -q "$d-linked" other
+		git config extensions.worktreeConfig true
+	)
+	( cd "$d-linked" && git config --worktree hook.pinBranch other )
 }
 
 # run <want ALLOW|BLOCK> <tree main|linked> <id> <subdir> <git args...>
@@ -89,7 +92,7 @@ run() {
 	local dir="$scratch/main$id"
 	[ "$tree" = linked ] && dir="$dir-linked"
 	local rc=0
-	last_out="$( cd "$dir/${sub:-.}" && DOTFILES_PIN_REGISTRY="$registry" git "$@" 2>&1 )" || rc=$?
+	last_out="$( cd "$dir/${sub:-.}" && git "$@" 2>&1 )" || rc=$?
 	local got=ALLOW
 	[ "$rc" = 0 ] || got=BLOCK
 	if [ "$got" = "$want" ]; then
@@ -113,13 +116,13 @@ run BLOCK linked 1 sub checkout third
 echo "the refusal names the pin, the path, and the way out"
 n=$((n + 1))
 missing=""
-for needle in 'Blocked: this working tree is pinned to other' "$scratch/main1-linked" 'git worktree add' 'DOTFILES_ALLOW_UNPIN'; do
+for needle in 'Blocked: this working tree is pinned to other' "$scratch/main1-linked" 'git worktree add' 'git config --worktree --unset hook.pinBranch' 'DOTFILES_ALLOW_UNPIN'; do
 	printf '%s' "$last_out" | grep -qF "$needle" || missing="${missing:+$missing, }$needle"
 done
 if [ -n "$missing" ]; then
 	no "refusal is missing: $missing"
 else
-	ok "refusal names the pin, the path and the override"
+	ok "refusal names the pin, the path, the unpin command and the override"
 fi
 
 echo "the refusal must not trip git-ai-sync's conflict-marker classifier"
@@ -133,37 +136,53 @@ else
 	ok "refusal carries neither git-ai-sync trigger phrase"
 fi
 
-echo "an unpinned main checkout is untouched"
+echo "a worktree pin does not leak to the main checkout"
 run ALLOW main 1 . checkout third
 run ALLOW main 1 . checkout -b newbranch2
 run ALLOW main 1 . checkout --detach HEAD
 
-echo "the documented flow still works from an unpinned main checkout"
+echo "a worktree pin does not leak to a sibling worktree"
 n=$((n + 1))
-d="$scratch/main9"
-new_repo "$d"
-printf '%s\tother\n' "$d-wt" >"$registry"
 rc=0
-( cd "$d" && DOTFILES_PIN_REGISTRY="$registry" git worktree add -q "$d-wt" other ) || rc=$?
-[ "$rc" = 0 ] && ok "git worktree add" || no "git worktree add rc=$rc"
+( cd "$scratch/main1" && git worktree add -q "$scratch/main1-sibling" fourth ) || rc=$?
+[ "$rc" = 0 ] && ok "git worktree add of a sibling" || no "sibling worktree add rc=$rc"
+n=$((n + 1))
+rc=0
+( cd "$scratch/main1-sibling" && git checkout -q -b sibling-branch ) || rc=$?
+[ "$rc" = 0 ] && ok "the unpinned sibling switches freely" || no "sibling was blocked (rc=$rc) — the pin leaked"
 
+echo "a repo-wide (--local) value is ignored, so it cannot pin the main checkout"
+n=$((n + 1))
+d="$scratch/local$n"
+new_repo "$d"
+( cd "$d" && git config --local hook.pinBranch master )
+rc=0
+( cd "$d" && git worktree add -q "$d-wt" other ) || rc=$?
+[ "$rc" = 0 ] && ok "git worktree add from a repo carrying a --local pin" || no "a --local pin blocked worktree add (rc=$rc)"
 n=$((n + 1))
 rc=0
-( cd "$d" && DOTFILES_PIN_REGISTRY="$registry" git worktree remove "$d-wt" ) >/dev/null 2>&1 || rc=$?
-[ "$rc" = 0 ] && ok "git worktree remove of a pinned worktree" || no "git worktree remove rc=$rc"
+( cd "$d" && git checkout -q third ) || rc=$?
+[ "$rc" = 0 ] && ok "a --local pin does not hold the main checkout" || no "a --local pin was honoured (rc=$rc)"
 
 echo "git init is not blocked"
 n=$((n + 1))
 d="$scratch/init$n"
 rc=0
-( cd "$scratch" && DOTFILES_PIN_REGISTRY=/dev/null git init -q -b master "$d" ) || rc=$?
+( cd "$scratch" && git init -q -b master "$d" ) || rc=$?
 [ "$rc" = 0 ] && ok "git init" || no "git init rc=$rc"
+
+echo "worktree remove of a pinned worktree is not blocked"
+pair 3
+n=$((n + 1))
+rc=0
+( cd "$scratch/main3" && git worktree remove "$scratch/main3-linked" ) >/dev/null 2>&1 || rc=$?
+[ "$rc" = 0 ] && ok "git worktree remove of a pinned worktree" || no "worktree remove rc=$rc"
 
 echo "escape hatch"
 pair 2
 n=$((n + 1))
 rc=0
-( cd "$scratch/main2-linked" && DOTFILES_PIN_REGISTRY="$registry" DOTFILES_ALLOW_UNPIN=1 git checkout third ) >/dev/null 2>&1 || rc=$?
+( cd "$scratch/main2-linked" && DOTFILES_ALLOW_UNPIN=1 git checkout third ) >/dev/null 2>&1 || rc=$?
 got="$( cd "$scratch/main2-linked" && git rev-parse --abbrev-ref HEAD )"
 if [ "$rc" = 0 ] && [ "$got" = third ]; then
 	ok "DOTFILES_ALLOW_UNPIN=1 allows the switch (now on $got)"
@@ -174,7 +193,7 @@ fi
 echo "an off-spelling of the override must not disarm the guard"
 n=$((n + 1))
 rc=0
-( cd "$scratch/main2-linked" && DOTFILES_PIN_REGISTRY="$registry" DOTFILES_ALLOW_UNPIN=0 git checkout fourth ) >/dev/null 2>&1 || rc=$?
+( cd "$scratch/main2-linked" && DOTFILES_ALLOW_UNPIN=0 git checkout fourth ) >/dev/null 2>&1 || rc=$?
 got="$( cd "$scratch/main2-linked" && git rev-parse --abbrev-ref HEAD )"
 if [ "$rc" != 0 ] && [ "$got" = third ]; then
 	ok "DOTFILES_ALLOW_UNPIN=0 is refused — only =1 disarms it"
@@ -182,46 +201,30 @@ else
 	no "DOTFILES_ALLOW_UNPIN=0 rc=$rc branch=$got — an off-spelling disarmed the guard"
 fi
 
-echo "a trailing slash in the registry still matches"
+echo "an unset HOME does not disarm the guard"
 n=$((n + 1))
-d="$scratch/slash$n"
-new_repo "$d"
-( cd "$d" && DOTFILES_PIN_REGISTRY=/dev/null git worktree add -q "$d-linked" other )
-printf '%s/\tother\n' "$d-linked" >"$registry"
 rc=0
-( cd "$d-linked" && DOTFILES_PIN_REGISTRY="$registry" git checkout third ) >/dev/null 2>&1 || rc=$?
-[ "$rc" != 0 ] && ok "trailing slash tolerated" || no "trailing slash broke the match (rc=$rc)"
+( cd "$scratch/main1-linked" && env -u HOME git checkout third ) >/dev/null 2>&1 || rc=$?
+[ "$rc" != 0 ] && ok "unset HOME still blocks" || no "unset HOME disarmed the guard (rc=$rc)"
 
-# The MAJOR this suite was extended for: under `set -u`, a bare "$HOME" in the
-# awk invocation aborted the substitution when HOME was unbound, leaving `pinned`
-# empty and the guard exiting 0 — a fail-open in exactly the daemon environment
-# (launchd/systemd, `env -i`) the hook claims to cover.
-echo "an unset HOME must not disarm the guard"
+echo "unpinning restores normal behaviour"
 n=$((n + 1))
-d="$scratch/nohome$n"
-new_repo "$d"
-( cd "$d" && DOTFILES_PIN_REGISTRY=/dev/null git worktree add -q "$d-linked" other )
-printf '%s\tother\n' "$d-linked" >"$registry"
+( cd "$scratch/main1-linked" && git config --worktree --unset hook.pinBranch )
 rc=0
-( cd "$d-linked" && env -u HOME DOTFILES_PIN_REGISTRY="$registry" git checkout third ) >/dev/null 2>&1 || rc=$?
-[ "$rc" != 0 ] && ok "unset HOME still blocks (absolute registry paths)" || no "unset HOME disarmed the guard (rc=$rc)"
-
-echo "an absent registry disables the guard"
-n=$((n + 1))
-rc=0
-( cd "$scratch/main1-linked" && DOTFILES_PIN_REGISTRY="$scratch/does-not-exist" git checkout third ) >/dev/null 2>&1 || rc=$?
-[ "$rc" = 0 ] && ok "missing registry is a no-op" || no "missing registry rc=$rc"
+( cd "$scratch/main1-linked" && git checkout -q third ) || rc=$?
+[ "$rc" = 0 ] && ok "git config --worktree --unset hook.pinBranch releases the tree" || no "unpinned tree still blocked (rc=$rc)"
 
 # Discriminating check: the deny cases above must depend on the hook actually
 # blocking. A no-op hook has to turn the same command into ALLOW — otherwise the
 # suite would report green against a guard that does nothing.
 echo "the suite is discriminating (a no-op hook must fail the deny cases)"
+pair 4
 n=$((n + 1))
 mkdir -p "$scratch/noop-hooks"
 printf '#!/bin/bash\nexit 0\n' >"$scratch/noop-hooks/reference-transaction"
 chmod +x "$scratch/noop-hooks/reference-transaction"
 rc=0
-( cd "$scratch/main1-linked" \
+( cd "$scratch/main4-linked" \
 	&& git -c core.hooksPath="$scratch/noop-hooks" checkout third ) >/dev/null 2>&1 || rc=$?
 if [ "$rc" = 0 ]; then
 	ok "no-op hook lets the switch through, so a BLOCK means the guard fired"
