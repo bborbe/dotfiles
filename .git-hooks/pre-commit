@@ -37,6 +37,43 @@ case "$repo_root" in
 	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
 esac
 
+# --- protected branches (opt-in per repo) ------------------------------------
+# Refuse a direct commit on a branch this repo declares protected:
+#
+#	git config hook.protectBranches "master main"
+#
+# Unset is the default and protects nothing. It can never be global: the vault
+# autocommits to master every ~40-111s and trading's main checkout merges on
+# master, so a machine-wide master guard would break both.
+#
+# Wording is load-bearing — this block must not contain the substrings
+# "refusing commit" or "conflict markers". git-ai-sync's is_marker_refusal()
+# matches those, then hunts for marker files, finds none, and sys.exit(1)s its
+# launchd daemon. test-pre-commit.sh pins that contract.
+protected="$(git config --get hook.protectBranches 2>/dev/null || true)"
+if [ -n "$protected" ]; then
+	branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+	# Word splitting is intended: the value is a whitespace-separated list.
+	# shellcheck disable=SC2086
+	for b in $protected; do
+		if [ "$branch" = "$b" ]; then
+			echo "" >&2
+			echo "✋ Blocked: $branch is a protected branch in this repo" >&2
+			echo "" >&2
+			echo "   Work lands on it through a merged pull request, never as a" >&2
+			echo "   direct commit. Move this change to its own worktree:" >&2
+			echo "     git fetch && git worktree add --no-track ../<repo>-<name> -b <branch> origin/master" >&2
+			echo "" >&2
+			echo "   To unprotect this repo:" >&2
+			echo "     git config --unset hook.protectBranches" >&2
+			echo "" >&2
+			echo "   Emergency override: git commit --no-verify" >&2
+			echo "" >&2
+			exit 1
+		fi
+	done
+fi
+
 # -z keeps paths with spaces/quotes intact (vault task filenames routinely
 # contain both); git would otherwise C-quote them and the loop would misread.
 flagged=""

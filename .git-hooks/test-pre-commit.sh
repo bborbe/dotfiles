@@ -249,5 +249,67 @@ else
 	ok "nested-path refusal carries neither git-ai-sync trigger phrase"
 fi
 
+echo "protected branches (opt-in via hook.protectBranches)"
+n=$((n + 1))
+got="$(
+	init_repo
+	git config hook.protectBranches "master main"
+	printf 'x\n' >f.txt
+	git add -A >/dev/null 2>&1
+	if git commit -q -m t >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = BLOCK ]; then
+	ok "a commit on a protected branch is refused"
+else
+	no "protected branch got=$got want=BLOCK — the opt-in guard did not fire"
+fi
+
+n=$((n + 1))
+got="$(
+	init_repo
+	printf 'x\n' >f.txt
+	git add -A >/dev/null 2>&1
+	if git commit -q -m t >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = ALLOW ]; then
+	ok "with the config unset nothing is protected (the default)"
+else
+	no "unset config got=$got want=ALLOW — the guard is not opt-in"
+fi
+
+n=$((n + 1))
+got="$(
+	init_repo
+	git config hook.protectBranches "main"
+	printf 'x\n' >f.txt
+	git add -A >/dev/null 2>&1
+	if git commit -q -m t >/dev/null 2>&1; then echo ALLOW; else echo BLOCK; fi
+)"
+if [ "$got" = ALLOW ]; then
+	ok "a branch absent from the list is unaffected"
+else
+	no "unlisted branch got=$got want=ALLOW"
+fi
+
+echo "protected-branch message wording (cross-tool contract with git-ai-sync)"
+n=$((n + 1))
+err="$(
+	init_repo
+	git config hook.protectBranches "master"
+	printf 'x\n' >f.txt
+	git add -A >/dev/null 2>&1
+	git commit -m t 2>&1 >/dev/null || true
+)"
+bad=""
+if printf '%s' "$err" | grep -qi 'refusing commit'; then bad="refusing commit"; fi
+if printf '%s' "$err" | grep -qi 'conflict markers'; then bad="${bad:+$bad, }conflict markers"; fi
+if [ -n "$bad" ]; then
+	no "protected-branch refusal contains \"$bad\" — git-ai-sync's is_marker_refusal() would misread it and kill the sync daemon"
+elif ! printf '%s' "$err" | grep -q 'Blocked: master is a protected branch'; then
+	no "protected-branch refusal missing its expected headline — did the message move?"
+else
+	ok "protected-branch refusal carries neither git-ai-sync trigger phrase"
+fi
+
 echo "pass=$pass fail=$fail"
 [ "$fail" -eq 0 ]

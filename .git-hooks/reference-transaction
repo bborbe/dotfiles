@@ -1,0 +1,121 @@
+#!/bin/bash
+#
+# reference-transaction: refuse a HEAD move that would take a pinned working
+# tree off its branch.
+#
+# A path is pinned by listing it in `.git-hooks/branch-pins` (one
+# `<absolute-path> <branch>` per line). Unlisted paths are untouched, so
+# `git init`, `git clone` and `git worktree add` keep working everywhere else,
+# and so does any daemon that switches branches in a repo nobody pinned —
+# dark-factory's Brancher runs `git checkout -b` / `git checkout <name>` in
+# whichever repo it processes, and none of those are listed.
+#
+# ONLY the "prepared" state is judged. In "preparing" git has not yet resolved
+# symbolic refs, so an ORDINARY BRANCH UPDATE IS REPORTED UNDER THE NAME `HEAD` —
+# judging there would refuse every commit. Measured on git 2.56.0:
+#
+#   prepared,  branch switch : 0000.. ref:refs/heads/<x> HEAD
+#   prepared,  detach        : 0000.. <sha>              HEAD
+#   prepared,  commit        : <old>  <new>              refs/heads/master
+#   preparing, that commit   : <old>  <new>              HEAD          <-- trap
+#
+# Override for one command:  DOTFILES_ALLOW_UNPIN=1 <git command>
+#
+# Installed globally via `core.hooksPath = ~/.git-hooks` in .gitconfig.osx.
+# To disable everywhere, remove this file; the registry alone does nothing.
+
+set -u
+
+state="${1:-}"
+stdin_data=$(cat)
+
+if [ "$state" != "prepared" ]; then
+	exit 0
+fi
+
+# Collect the new-value of every HEAD line. Pure bash, no fork: this runs on
+# every ref update in every repo, and the overwhelming majority — commits,
+# branch and tag creates, fetches — carry no HEAD line at all.
+head_newvalues=""
+while IFS=' ' read -r _old newval refname; do
+	if [ "$refname" = "HEAD" ]; then
+		head_newvalues="${head_newvalues}${newval}"$'\n'
+	fi
+done <<<"$stdin_data"
+if [ -z "$head_newvalues" ]; then
+	exit 0
+fi
+
+if [ -n "${DOTFILES_ALLOW_UNPIN:-}" ]; then
+	exit 0
+fi
+
+hook_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 0
+registry="${DOTFILES_PIN_REGISTRY:-$hook_dir/branch-pins}"
+if [ ! -f "$registry" ]; then
+	exit 0
+fi
+
+# The tree whose HEAD is being updated. For `git worktree add` git points the
+# hook at the INVOKING checkout, so this resolves the tree the command was typed
+# in — which is why main checkouts are not pinned; see the registry header.
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+if [ -z "$root" ]; then
+	exit 0
+fi
+# Physical form: --show-toplevel yields /tmp/... or /private/tmp/... depending
+# on how the shell reached the tree, so both sides are normalised before they
+# are compared.
+root=$(cd "$root" 2>/dev/null && pwd -P) || exit 0
+
+# Skip throwaway trees, matching pre-commit and pre-push. A sandbox repo cannot
+# affect shared state, so a pin there would only be a false positive.
+case "$root" in
+	/tmp/*|/var/folders/*|/private/tmp/*|/private/var/folders/*) exit 0 ;;
+esac
+
+# One awk, not grep+cut: it expands `~/`, skips comments and reads the branch in
+# the same pass. A pinned path that no longer exists simply never matches — this
+# hook runs in every repo on the machine and must never break an unrelated git
+# command on stale data.
+pinned=$(awk -v p="$root" -v home="$HOME" '
+	/^[[:space:]]*#/ { next }
+	NF < 2 { next }
+	{ path = $1
+	  if (path ~ /^~\//) path = home substr(path, 2)
+	  if (path == p) { print $2; exit } }
+' "$registry")
+if [ -z "$pinned" ]; then
+	exit 0
+fi
+
+while IFS= read -r newval; do
+	[ -n "$newval" ] || continue
+	new_branch=""
+	case "$newval" in
+		ref:refs/heads/*) new_branch="${newval#ref:refs/heads/}" ;;
+	esac
+	# A no-op re-checkout of the pinned branch lands here too, and is allowed.
+	if [ "$new_branch" = "$pinned" ]; then
+		continue
+	fi
+
+	echo "" >&2
+	echo "✋ Blocked: this working tree is pinned to $pinned" >&2
+	echo "" >&2
+	echo "   Path:      $root" >&2
+	echo "   Pinned:    $pinned" >&2
+	echo "   Moving to: ${new_branch:-$newval}" >&2
+	echo "" >&2
+	echo "   This tree must stay on $pinned. Make the change in its own worktree:" >&2
+	echo "     git fetch && git worktree add --no-track ../<repo>-<name> -b <branch> origin/master" >&2
+	echo "" >&2
+	echo "   To unpin, remove this tree's line from the registry:" >&2
+	echo "     $registry" >&2
+	echo "" >&2
+	echo "   Emergency override: DOTFILES_ALLOW_UNPIN=1 <the same git command>" >&2
+	echo "" >&2
+	exit 1
+done <<<"$head_newvalues"
+
+exit 0

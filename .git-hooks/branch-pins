@@ -1,0 +1,36 @@
+# Pinned working trees — one `<absolute-path> <branch>` per line.
+#
+# A path listed here may not leave <branch>: the reference-transaction hook
+# aborts any HEAD update that would switch it away or detach it. Unlisted paths
+# are untouched, so `git init`, `git clone` and `git worktree add` keep working
+# everywhere else. The line is whitespace-split, so a path containing a space is
+# not supported; `~/` expands to $HOME (a literal `$HOME` does not).
+#
+# Override for one command:  DOTFILES_ALLOW_UNPIN=1 <git command>
+#
+# ---------------------------------------------------------------------------
+# Deploy worktrees. Each is a linked worktree whose branch decides what a
+# `make buca` from it ships, so a switch here deploys the wrong code.
+#
+~/Documents/workspaces/trading-dev            dev
+~/Documents/workspaces/trading-prod           prod
+~/Documents/workspaces/agent-dev              dev
+~/Documents/workspaces/sm-octopus-dev         dev
+~/Documents/workspaces/sm-octopus-staging     staging
+~/Documents/workspaces/discord-assistant-dev  dev
+#
+# ---------------------------------------------------------------------------
+# Deliberately NOT pinned, recorded so a later reader does not "fix" them:
+#
+#   ~/Documents/workspaces/agent
+#     Holds a dark-factory release branch by design, not by drift.
+#
+#   every MAIN checkout (trading, sm-octopus, openbrain, ~/.claude, …)
+#     A pin here refuses `git worktree add`, the documented way to branch.
+#     Measured 2026-10-12: during the add, git runs this hook at the INVOKING
+#     checkout — `PWD` and `rev-parse --show-toplevel` both resolve the parent
+#     and `GIT_DIR` is unset — while the HEAD line it emits names the NEW
+#     worktree. The two are indistinguishable from inside the hook, so a pinned
+#     main checkout could not create a worktree at all. Main checkouts are
+#     covered instead by ~/.claude/hooks/deny-branch-switch-in-main-checkout.sh,
+#     which sees Claude's own commands.
