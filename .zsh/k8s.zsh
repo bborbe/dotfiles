@@ -30,6 +30,7 @@ kubectl() {
 	echo "  - kubectlsmalldev (gke-seibert-k8s-small dev)" >&2
 	echo "  - kubectlnukeprod (nuke k3s prod)" >&2
 	echo "  - kubectlnukedev (nuke k3s dev)" >&2
+	echo "  - kubectlsun (sun k3s)" >&2
 	return 1
 }
 
@@ -43,6 +44,7 @@ kubectlsmallprod() { KUBECONFIG="${HOME}/.kube/gke-seibert-k8s-small-prod" comma
 kubectlsmalldev() { KUBECONFIG="${HOME}/.kube/gke-seibert-k8s-small-dev" command kubectl "$@"; }
 kubectlnukeprod() { KUBECONFIG="${HOME}/.kube/nuke-prod" command kubectl "$@"; }
 kubectlnukedev() { KUBECONFIG="${HOME}/.kube/nuke-dev" command kubectl "$@"; }
+kubectlsun() { KUBECONFIG="${HOME}/.kube/sun" command kubectl "$@"; }
 
 # Set up completion for wrapper functions
 if type "kubectl" > /dev/null 2>&1; then
@@ -55,4 +57,5 @@ if type "kubectl" > /dev/null 2>&1; then
 	compdef kubectlsmalldev=kubectl
 	compdef kubectlnukeprod=kubectl
 	compdef kubectlnukedev=kubectl
+	compdef kubectlsun=kubectl
 fi
