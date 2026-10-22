@@ -171,7 +171,7 @@ bindkey "^[[B" down-line-or-beginning-search # Down
 # pyenv
 export PATH="$HOME/.pyenv/bin:$PATH"
 if type "pyenv" > /dev/null; then
-	eval "$(pyenv init -)"
+	eval "$(pyenv init - --no-rehash)"
 	eval "$(pyenv virtualenv-init -)"
 fi
 
