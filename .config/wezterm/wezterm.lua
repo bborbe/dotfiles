@@ -4,23 +4,22 @@ local config = wezterm.config_builder()
 
 -- Session persistence across restarts (pane layout + cwd + scrollback).
 -- Manual save/restore only (SUPER+S / SUPER+R) — startup auto-restore is
--- intentionally NOT wired, since gui-startup below force-spawns four windows.
+-- intentionally NOT wired, since gui-startup below force-spawns three windows.
 local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
 resurrect.state_manager.periodic_save({ interval_seconds = 300, save_workspaces = true })
 
 local is_windows = os.getenv("OS") and os.getenv("OS"):lower():find("windows")
 local is_macos = wezterm.target_triple:lower():find("darwin") ~= nil
 
--- Four-window setup — one theme + one title per purpose:
+-- Three-window setup — one theme + one title per purpose:
 --   Managers → Gruvbox Material (Gogh)  — the Claude manager sessions
 --   Direct   → Solarized Dark (Gogh)    — work I drive directly, by hand
---   Agents   → Tokyo Night Storm        — the worker agents the managers drive
 --   Hold     → nord                     — parked: blocked or not wanted now
 --
--- Names deliberately start with four different letters (M/D/A/H). An earlier
+-- Names deliberately start with three different letters (M/D/H). An earlier
 -- pass used manager/worker/managed, where "manager" and "managed" were
 -- indistinguishable at a glance in a window switcher — which is the entire
--- point of naming them. SUPER|SHIFT+1..4 pins the current window to a purpose.
+-- point of naming them. SUPER|SHIFT+1..3 pins the current window to a purpose.
 --
 -- Theme list for reference:
 --   "Catppuccin Mocha", "Dracula (Official)", "Gruvbox Material (Gogh)",
@@ -54,7 +53,6 @@ local WORKSPACE = "main"
 -- readable from inside the session and from the transcript.
 --
 --   Managers  orange  managers      (fleet / topic / worker managers)
---   Agents    pink    agents        (the fleet default for workers)
 --   Direct    cyan    human-only    (the operator's own work — NOT a worker)
 --   Hold      nil     —             (a parking lot, not a role; never spawned into)
 --
@@ -63,11 +61,10 @@ local WORKSPACE = "main"
 local window_specs = {
   { purpose = "Managers", scheme = "Gruvbox Material (Gogh)", cwd = wezterm.home_dir,                              chip = "orange" },
   { purpose = "Direct",   scheme = "Solarized Dark (Gogh)",   cwd = wezterm.home_dir .. "/Documents/workspaces",  chip = "cyan"   },
-  { purpose = "Agents",   scheme = "Tokyo Night Storm",       cwd = wezterm.home_dir .. "/Documents/workspaces",  chip = "pink"   },
   -- Parking lot for tabs that are blocked or not wanted right now, and the
   -- natural destination for the SUPER|SHIFT+A park binding. nord is cold and
-  -- desaturated — distinct from the warm brown, teal and purple above without
-  -- being a light theme glaring among three dark ones.
+  -- desaturated — distinct from the warm brown and teal above without being a
+  -- light theme glaring among two dark ones.
   { purpose = "Hold",     scheme = "nord",                    cwd = wezterm.home_dir,                              chip = nil      },
 }
 
@@ -742,7 +739,7 @@ config.keys = {
 }
 
 -- SUPER|SHIFT + 1..N pins the CURRENT window to a purpose: Managers, Direct,
--- Agents, Hold. Colour and title follow immediately.
+-- Hold. Colour and title follow immediately.
 --
 -- This is the manual override for the automatic assignment. Adoption has to
 -- guess — it hands out free purposes in window-id order — and that guess is
